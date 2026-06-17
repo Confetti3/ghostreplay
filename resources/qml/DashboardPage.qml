@@ -8,23 +8,31 @@ Page {
     background: Rectangle { color: "transparent" }
     property var overviewClips: []
 
+    // Entrance animation properties
+    property real appearOffset: 25
+    property real appearOpacity: 0
+    NumberAnimation on appearOpacity { to: 1.0; duration: 800; easing.type: Easing.OutExpo }
+    NumberAnimation on appearOffset { to: 0; duration: 800; easing.type: Easing.OutExpo }
+
     RowLayout {
         anchors.fill: parent
-        spacing: 14
+        spacing: 20
 
         Item {
             id: mainPane
             Layout.fillWidth: true
             Layout.fillHeight: true
+            opacity: page.appearOpacity
+            transform: Translate { y: page.appearOffset }
 
             ColumnLayout {
                 anchors.fill: parent
-                anchors.margins: 18
-                spacing: 13
+                anchors.margins: 24
+                spacing: 24
 
                 OverviewHeader {
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 56
+                    Layout.preferredHeight: 64
                 }
 
                 GlassPanel {
@@ -41,9 +49,9 @@ Page {
                         spacing: 14
 
                         Rectangle {
-                            Layout.preferredWidth: 42
-                            Layout.preferredHeight: 42
-                            radius: 21
+                            Layout.preferredWidth: 46
+                            Layout.preferredHeight: 46
+                            radius: 23
                             color: Qt.rgba(1.0, 0.48, 0.48, 0.11)
                             border.color: root.recordRed
                             border.width: 1
@@ -51,11 +59,11 @@ Page {
                             MonoIcon {
                                 anchors.centerIn: parent
                                 source: root.iconVideo
-                                width: 18
-                                height: 18
+                                width: 20
+                                height: 20
                                 tint: root.recordRed
                                 glowColor: root.recordRed
-                                glowStrength: 0.10
+                                glowStrength: 0.20
                                 treatment: "featured"
                                 iconOpacity: 0.96
                             }
@@ -63,18 +71,18 @@ Page {
 
                         ColumnLayout {
                             Layout.fillWidth: true
-                            spacing: 3
+                            spacing: 4
 
                             Text {
                                 text: "Capture unavailable"
                                 color: root.textPrimary
-                                font: root.titleFont
+                                font: root.headingFont
                             }
 
                             Text {
                                 text: backend.captureError || "Recording requires Windows desktop capture and a supported video encoder."
                                 color: root.textSecondary
-                                font: root.smallFont
+                                font: root.bodyFont
                                 wrapMode: Text.Wrap
                                 Layout.fillWidth: true
                             }
@@ -102,29 +110,60 @@ Page {
                     Layout.preferredHeight: 128
                 }
 
-                SessionSummary {
+                GridLayout {
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 88
+                    columns: mainPane.width > 800 ? 4 : (mainPane.width > 500 ? 2 : 1)
+                    columnSpacing: 16
+                    rowSpacing: 16
+
+                    StatusCard {
+                        icon: root.iconVideo
+                        label: "Capture"
+                        value: backend.captureAvailable ? (backend.recording ? "Live" : "Paused") : "Unavailable"
+                        detail: backend.captureAvailable ? (backend.currentGame || "Desktop") : "Retry from settings"
+                        accentColor: backend.captureAvailable ? root.accentBlue : root.recordRed
+                    }
+
+                    StatusCard {
+                        icon: root.iconBuffer
+                        label: "Buffer"
+                        value: bufferReady() ? backend.bufferSeconds + "s ready" : "Warming up"
+                        detail: bufferReady() ? backend.bufferPackets + " packets" : "Waiting"
+                        accentColor: bufferReady() ? root.accent : root.warningYellow
+                    }
+
+                    StatusCard {
+                        icon: root.iconOutput
+                        label: "Video"
+                        value: videoProfile()
+                        detail: backend.captureCodec.toUpperCase() + " CQP " + backend.captureCqp
+                        accentColor: root.accentPurple
+                    }
+
+                    StatusCard {
+                        icon: root.iconAudio
+                        label: "Audio"
+                        value: backend.audioActive ? "Enabled" : "Disabled"
+                        detail: backend.audioActive ? backend.audioSampleRate + " Hz" : "Loopback off"
+                        accentColor: backend.audioActive ? root.warningYellow : root.inactive
+                    }
                 }
 
                 GlassPanel {
                     id: recentSurface
                     theme: root.uiTheme
-                    tone: "raised"
+                    tone: "surface"
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    sheenOpacity: 0.86
+                    sheenOpacity: 0.9
                     depth: 0.95
                     color: Qt.rgba(0.038, 0.055, 0.058, 0.94)
                     border.color: Qt.rgba(root.uiTheme.border.r, root.uiTheme.border.g, root.uiTheme.border.b, 0.74)
 
                     ColumnLayout {
                         anchors.fill: parent
-                        anchors.leftMargin: 14
-                        anchors.rightMargin: 14
-                        anchors.topMargin: 12
-                        anchors.bottomMargin: 12
-                        spacing: 10
+                        anchors.margins: 18
+                        spacing: 16
 
                         RowLayout {
                             Layout.fillWidth: true
@@ -133,12 +172,12 @@ Page {
 
                             ColumnLayout {
                                 Layout.fillWidth: true
-                                spacing: 0
+                                spacing: 2
 
                                 Text {
                                     text: "Recent saves"
                                     color: root.textPrimary
-                                    font: root.titleFont
+                                    font: root.headingFont
                                     elide: Text.ElideRight
                                     Layout.fillWidth: true
                                 }
@@ -146,9 +185,9 @@ Page {
                                 Text {
                                     text: totalClipCount() > overviewClips.length
                                         ? "Latest " + overviewClips.length + " of " + totalClipCount() + " saved clips"
-                                        : overviewClips.length + (overviewClips.length === 1 ? " saved clip" : " saved clips") + " ready to open or share"
+                                        : overviewClips.length + (overviewClips.length === 1 ? " saved clip" : " saved clips") + " ready to share"
                                     color: root.textSoft
-                                    font: root.smallFont
+                                    font: root.bodyFont
                                     elide: Text.ElideRight
                                     Layout.fillWidth: true
                                 }
@@ -159,7 +198,7 @@ Page {
                             TextButton {
                                 text: "All clips"
                                 iconPath: root.iconGrid
-                                Layout.preferredWidth: 104
+                                Layout.preferredWidth: 110
                                 onClicked: root.goToView(1, true)
                             }
                         }
@@ -168,41 +207,34 @@ Page {
                             id: recentList
                             Layout.fillWidth: true
                             Layout.fillHeight: true
-                            readonly property int scrollGutter: 20
                             clip: true
-                            spacing: 7
+                            spacing: 10
                             model: overviewClips
                             boundsBehavior: Flickable.StopAtBounds
 
-                            Rectangle {
-                                anchors.fill: parent
-                                color: "transparent"
-                                z: -2
-                            }
-
                             delegate: CompactClipRow {
-                                width: Math.max(0, recentList.width - recentList.scrollGutter)
+                                width: Math.max(0, recentList.width - 16)
                                 clipData: modelData
                             }
 
                             Text {
                                 anchors.centerIn: parent
                                 visible: recentList.count === 0
-                                text: "No clips saved yet. Press " + root.shortcutText() + " after a moment you want to keep."
+                                text: "No clips saved yet.\nPress " + root.shortcutText() + " when something cool happens."
                                 color: root.textSoft
-                                font: root.bodyFont
+                                font: root.titleFont
                                 width: Math.min(parent.width - 48, 420)
                                 horizontalAlignment: Text.AlignHCenter
                                 wrapMode: Text.Wrap
+                                opacity: 0.6
                             }
 
                             ScrollBar.vertical: AppScrollBar {
                                 theme: root.uiTheme
                                 policy: recentList.contentHeight > recentList.height + 1 ? ScrollBar.AsNeeded : ScrollBar.AlwaysOff
-                                x: recentList.width - width - 4
+                                x: recentList.width - width
                             }
                         }
-
                     }
                 }
             }
@@ -211,41 +243,40 @@ Page {
         GlassPanel {
             theme: root.uiTheme
             tone: "rail"
-            Layout.preferredWidth: page.width >= 1120 ? 300 : 0
-            Layout.minimumWidth: page.width >= 1120 ? 300 : 0
-            Layout.maximumWidth: page.width >= 1120 ? 300 : 0
+            Layout.preferredWidth: page.width >= 1120 ? 320 : 0
+            Layout.minimumWidth: page.width >= 1120 ? 320 : 0
+            Layout.maximumWidth: page.width >= 1120 ? 320 : 0
             Layout.fillHeight: true
             visible: page.width >= 1120
+            opacity: page.appearOpacity
+            transform: Translate { x: page.appearOffset }
 
             ColumnLayout {
                 anchors.fill: parent
-                anchors.leftMargin: 20
-                anchors.rightMargin: 20
-                anchors.topMargin: 18
-                anchors.bottomMargin: 16
-                spacing: 16
+                anchors.margins: 24
+                spacing: 24
 
                 ColumnLayout {
                     Layout.fillWidth: true
-                    spacing: 2
+                    spacing: 6
 
                     Text {
                         text: "Capture health"
                         color: root.textPrimary
-                        font: Qt.font({ family: root.uiTheme.displayFamily, pixelSize: 18, weight: Font.DemiBold })
+                        font: Qt.font({ family: root.uiTheme.displayFamily, pixelSize: 20, weight: Font.DemiBold })
                     }
 
                     Text {
                         text: backend.captureAvailable ? "Recording status and output readiness." : "Capture needs attention before new clips can be saved."
                         color: root.textSoft
-                        font: root.smallFont
+                        font: root.bodyFont
                         wrapMode: Text.Wrap
                         Layout.fillWidth: true
                     }
                 }
 
                 InspectorSection {
-                    title: "Pipeline"
+                    title: "PIPELINE"
                     rows: [
                         { label: "Capture", value: backend.captureAvailable ? (backend.recording ? "DXGI active" : "Paused") : "Unavailable", accent: backend.captureAvailable ? (backend.recording ? root.successGreen : root.inactive) : root.recordRed },
                         { label: "Encode", value: backend.captureCodec.toUpperCase() + " preset " + backend.capturePreset, accent: root.successGreen },
@@ -255,7 +286,7 @@ Page {
                 }
 
                 InspectorSection {
-                    title: "Session"
+                    title: "SESSION"
                     rows: [
                         { label: "Target", value: backend.currentGame || "Desktop", accent: root.successGreen },
                         { label: "Audio", value: backend.audioActive ? "WASAPI loopback" : "Disabled", accent: backend.audioActive ? root.successGreen : root.inactive },
@@ -266,12 +297,12 @@ Page {
 
                 ColumnLayout {
                     Layout.fillWidth: true
-                    spacing: 8
+                    spacing: 12
 
                     Text {
-                        text: "Workflow"
+                        text: "WORKFLOW"
                         color: root.textMuted
-                        font: root.smallFont
+                        font: Qt.font({ family: root.uiTheme.displayFamily, pixelSize: 11, weight: Font.DemiBold, capitalization: Font.AllUppercase })
                     }
 
                     StepRow { indexText: "1"; detail: "Keep capture live while you play or work." }
@@ -291,7 +322,7 @@ Page {
                         font: root.smallFont
                     }
 
-                    Rectangle { width: 3; height: 3; radius: 2; color: root.textSoft; opacity: 0.7 }
+                    Rectangle { width: 4; height: 4; radius: 2; color: root.textSoft; opacity: 0.5 }
 
                     Text {
                         text: "v" + backend.appVersion
@@ -346,6 +377,10 @@ Page {
     }
 
     onVisibleChanged: if (visible) {
+        appearOpacity = 0
+        appearOffset = 25
+        appearOpacity = 1.0
+        appearOffset = 0
         backend.requestRefresh()
         updateOverviewClips()
     }
@@ -359,27 +394,27 @@ Page {
     component OverviewHeader: Item {
         RowLayout {
             anchors.fill: parent
-            spacing: 12
+            spacing: 16
 
             GlassPanel {
                 theme: root.uiTheme
                 tone: "raised"
-                Layout.preferredWidth: 50
-                Layout.preferredHeight: 50
-                radius: 14
+                Layout.preferredWidth: 64
+                Layout.preferredHeight: 64
+                radius: 20
                 sheenOpacity: 1.12
                 depth: 1.18
                 color: Qt.rgba(0.055, 0.095, 0.115, 0.92)
-                border.color: Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.28)
+                border.color: Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.38)
 
                 MonoIcon {
                     anchors.centerIn: parent
                     source: root.iconOverview
-                    width: 24
-                    height: 24
+                    width: 32
+                    height: 32
                     tint: root.accent
                     glowColor: root.accent
-                    glowStrength: 0.13
+                    glowStrength: 0.3
                     treatment: "featured"
                     iconOpacity: 0.98
                 }
@@ -387,12 +422,12 @@ Page {
 
             ColumnLayout {
                 Layout.fillWidth: true
-                spacing: 1
+                spacing: 4
 
                 Text {
                     text: "Overview"
                     color: root.textPrimary
-                    font: Qt.font({ family: root.uiTheme.displayFamily, pixelSize: 24, weight: Font.DemiBold })
+                    font: Qt.font({ family: root.uiTheme.displayFamily, pixelSize: 28, weight: Font.Bold })
                     elide: Text.ElideRight
                     Layout.fillWidth: true
                 }
@@ -401,7 +436,7 @@ Page {
                     text: backend.captureAvailable
                         ? (backend.recording ? "Capture is running. Save the last moment when something worth keeping happens." : "Capture is paused. Resume to rebuild the replay buffer.")
                         : "Capture needs attention. Existing clips, logs, and diagnostics are still available."
-                    color: root.textMuted
+                    color: root.textSoft
                     font: root.bodyFont
                     wrapMode: Text.Wrap
                     Layout.fillWidth: true
@@ -410,7 +445,7 @@ Page {
 
             RowLayout {
                 Layout.alignment: Qt.AlignVCenter
-                spacing: 8
+                spacing: 10
 
                 AppChip {
                     theme: root.uiTheme
@@ -430,72 +465,8 @@ Page {
         }
     }
 
-    component SessionSummary: GlassPanel {
-        id: summary
-
-        theme: root.uiTheme
-        tone: "surface"
-        sheenOpacity: 0.80
-        depth: 0.92
-        color: Qt.rgba(0.038, 0.056, 0.060, 0.92)
-        border.color: Qt.rgba(root.uiTheme.border.r, root.uiTheme.border.g, root.uiTheme.border.b, 0.58)
-
-        RowLayout {
-            anchors.fill: parent
-            anchors.leftMargin: 12
-            anchors.rightMargin: 12
-            spacing: 0
-
-            StatusCell {
-                icon: root.iconVideo
-                label: "Capture"
-                value: backend.captureAvailable ? (backend.recording ? "Live" : "Paused") : "Unavailable"
-                detail: backend.captureAvailable ? (backend.currentGame || "Desktop") : "Retry from settings"
-                accentColor: backend.captureAvailable ? root.accentBlue : root.recordRed
-            }
-
-            SummaryDivider {}
-
-            StatusCell {
-                icon: root.iconBuffer
-                label: "Buffer"
-                value: bufferReady() ? backend.bufferSeconds + "s ready" : "Warming up"
-                detail: bufferReady() ? backend.bufferPackets + " packets in memory" : "Waiting for packets"
-                accentColor: bufferReady() ? root.accent : root.warningYellow
-            }
-
-            SummaryDivider {}
-
-            StatusCell {
-                icon: root.iconOutput
-                label: "Video"
-                value: videoProfile()
-                detail: backend.captureCodec.toUpperCase() + "  CQP " + backend.captureCqp
-                accentColor: root.accentPurple
-            }
-
-            SummaryDivider {}
-
-            StatusCell {
-                icon: root.iconAudio
-                label: "Audio"
-                value: backend.audioActive ? "Enabled" : "Disabled"
-                detail: backend.audioActive ? backend.audioSampleRate + " Hz stereo" : "Loopback inactive"
-                accentColor: backend.audioActive ? root.warningYellow : root.inactive
-            }
-        }
-    }
-
-    component SummaryDivider: Rectangle {
-        Layout.preferredWidth: 1
-        Layout.fillHeight: true
-        Layout.topMargin: 18
-        Layout.bottomMargin: 18
-        color: Qt.rgba(root.uiTheme.border.r, root.uiTheme.border.g, root.uiTheme.border.b, 0.42)
-    }
-
-    component StatusCell: Item {
-        id: statusCell
+    component StatusCard: GlassPanel {
+        id: card
 
         property string icon
         property string label
@@ -503,55 +474,74 @@ Page {
         property string detail
         property color accentColor: root.accent
 
+        theme: root.uiTheme
+        tone: "raised"
         Layout.fillWidth: true
-        Layout.fillHeight: true
-        Layout.minimumWidth: 142
+        Layout.preferredHeight: 110
+        sheenOpacity: mouse.containsMouse ? 1.2 : 0.8
+        depth: mouse.containsMouse ? 1.1 : 0.9
+        
+        color: mouse.pressed ? root.pressedBg : mouse.containsMouse ? Qt.rgba(0.08, 0.12, 0.16, 0.94) : Qt.rgba(0.05, 0.07, 0.09, 0.8)
+        border.color: mouse.containsMouse ? Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.4) : Qt.rgba(root.uiTheme.border.r, root.uiTheme.border.g, root.uiTheme.border.b, 0.5)
 
-        RowLayout {
-            anchors.fill: parent
-            anchors.leftMargin: 12
-            anchors.rightMargin: 12
-            spacing: 10
+        Behavior on color { ColorAnimation { duration: 150; easing.type: Easing.OutCubic } }
+        Behavior on border.color { ColorAnimation { duration: 150; easing.type: Easing.OutCubic } }
 
+        Rectangle {
+            x: 14
+            y: 14
+            width: 36
+            height: 36
+            radius: 18
+            color: Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.1)
+            
             MonoIcon {
-                source: statusCell.icon
-                Layout.preferredWidth: 19
-                Layout.preferredHeight: 19
-                tint: statusCell.accentColor
-                glowColor: statusCell.accentColor
-                glowStrength: 0.10
+                anchors.centerIn: parent
+                source: card.icon
+                width: 18
+                height: 18
+                tint: card.accentColor
+                glowColor: card.accentColor
+                glowStrength: 0.4
                 treatment: "featured"
-                iconOpacity: 0.95
             }
+        }
 
-            ColumnLayout {
+        ColumnLayout {
+            anchors.left: parent.left
+            anchors.leftMargin: 16
+            anchors.right: parent.right
+            anchors.rightMargin: 16
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: 14
+            spacing: 2
+
+            Text {
+                text: card.label
+                color: root.textSoft
+                font: Qt.font({ family: root.uiTheme.displayFamily, pixelSize: 11, weight: Font.DemiBold, capitalization: Font.AllUppercase })
+            }
+            Text {
+                text: card.value
+                color: root.textPrimary
+                font: Qt.font({ family: root.uiTheme.displayFamily, pixelSize: 20, weight: Font.Bold })
+                elide: Text.ElideRight
                 Layout.fillWidth: true
-                spacing: 2
-
-                Text {
-                    text: statusCell.label
-                    color: root.textMuted
-                    font: Qt.font({ family: root.uiTheme.displayFamily, pixelSize: 10, weight: Font.DemiBold })
-                    elide: Text.ElideRight
-                    Layout.fillWidth: true
-                }
-
-                Text {
-                    text: statusCell.value
-                    color: root.textPrimary
-                    font: Qt.font({ family: root.uiTheme.displayFamily, pixelSize: 19, weight: Font.DemiBold })
-                    elide: Text.ElideRight
-                    Layout.fillWidth: true
-                }
-
-                Text {
-                    text: statusCell.detail
-                    color: root.textMuted
-                    font: root.smallFont
-                    elide: Text.ElideRight
-                    Layout.fillWidth: true
-                }
             }
+            Text {
+                text: card.detail
+                color: root.textMuted
+                font: root.smallFont
+                elide: Text.ElideRight
+                Layout.fillWidth: true
+            }
+        }
+
+        MouseArea {
+            id: mouse
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
         }
     }
 
@@ -562,34 +552,37 @@ Page {
 
         theme: root.uiTheme
         tone: "surface"
-        height: 58
+        height: 64
         sheenOpacity: rowMouse.containsMouse ? 1.0 : 0.70
         depth: rowMouse.containsMouse ? 1.04 : 0.82
         color: rowMouse.pressed ? root.pressedBg : rowMouse.containsMouse ? Qt.rgba(0.075, 0.115, 0.125, 0.92) : Qt.rgba(0.025, 0.038, 0.042, 0.78)
-        border.color: rowMouse.containsMouse ? Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.35) : Qt.rgba(root.uiTheme.border.r, root.uiTheme.border.g, root.uiTheme.border.b, 0.64)
+        border.color: rowMouse.containsMouse ? Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.4) : Qt.rgba(root.uiTheme.border.r, root.uiTheme.border.g, root.uiTheme.border.b, 0.64)
+
+        Behavior on color { ColorAnimation { duration: 150; easing.type: Easing.OutCubic } }
+        Behavior on border.color { ColorAnimation { duration: 150; easing.type: Easing.OutCubic } }
 
         RowLayout {
             anchors.fill: parent
-            anchors.leftMargin: 10
-            anchors.rightMargin: 8
-            spacing: 12
+            anchors.margins: 10
+            spacing: 16
 
             AppThumbnail {
                 theme: root.uiTheme
-                Layout.preferredWidth: 78
-                Layout.preferredHeight: 42
+                Layout.preferredWidth: 84
+                Layout.preferredHeight: 46
                 clipPath: clipRow.clipData ? clipRow.clipData.path : ""
                 fallbackText: "No preview"
+                radius: themeTokens.radiusSm
             }
 
             ColumnLayout {
                 Layout.fillWidth: true
-                spacing: 1
+                spacing: 2
 
                 Text {
                     text: clipRow.clipData ? clipRow.clipData.name : ""
                     color: root.textPrimary
-                    font: root.bodyFont
+                    font: Qt.font({ family: root.uiTheme.bodyFamily, pixelSize: 14, weight: Font.Medium })
                     elide: Text.ElideRight
                     Layout.fillWidth: true
                 }
@@ -606,7 +599,7 @@ Page {
             TextButton {
                 text: "Share"
                 iconPath: root.iconEdit
-                Layout.preferredWidth: 92
+                Layout.preferredWidth: 100
                 onClicked: if (clipRow.clipData) root.openClipEditor(clipRow.clipData)
             }
 
@@ -635,7 +628,7 @@ Page {
         theme: root.uiTheme
         iconSource: iconPath
         accentColor: root.controlAccent(iconPath, false)
-        implicitHeight: 32
+        implicitHeight: 36
     }
 
     component MiniIconButton: GlassPanel {
@@ -648,21 +641,23 @@ Page {
 
         theme: root.uiTheme
         tone: "raised"
-        Layout.preferredWidth: 32
-        Layout.preferredHeight: 32
-        color: miniMouse.pressed ? root.pressedBg : miniMouse.containsMouse ? root.hoverBg : root.panelRaised
-        border.color: miniMouse.containsMouse ? root.borderStrong : root.border
+        Layout.preferredWidth: 36
+        Layout.preferredHeight: 36
+        color: miniMouse.pressed ? root.pressedBg : miniMouse.containsMouse ? Qt.rgba(0.12, 0.18, 0.22, 0.9) : root.panelRaised
+        border.color: miniMouse.containsMouse ? accentColor : root.border
+
+        Behavior on color { ColorAnimation { duration: 150 } }
 
         MonoIcon {
             anchors.centerIn: parent
             source: miniIconButton.icon
-            width: 14
-            height: 14
+            width: 16
+            height: 16
             tint: miniMouse.containsMouse ? miniIconButton.accentColor : root.textSecondary
-            glowColor: "transparent"
-            glowStrength: 0.0
+            glowColor: miniMouse.containsMouse ? miniIconButton.accentColor : "transparent"
+            glowStrength: miniMouse.containsMouse ? 0.3 : 0.0
             treatment: "compact"
-            iconOpacity: miniMouse.containsMouse ? 0.92 : 0.78
+            iconOpacity: miniMouse.containsMouse ? 1.0 : 0.78
         }
 
         ToolTip.visible: miniMouse.containsMouse && miniIconButton.tooltip.length > 0
@@ -692,23 +687,23 @@ Page {
             id: inspectorContent
             anchors.left: parent.left
             anchors.right: parent.right
-            spacing: 8
+            spacing: 12
 
             Text {
                 text: inspectorSection.title
                 color: root.textMuted
-                font: root.smallFont
+                font: Qt.font({ family: root.uiTheme.displayFamily, pixelSize: 11, weight: Font.DemiBold, capitalization: Font.AllUppercase })
             }
 
             Repeater {
                 model: inspectorSection.rows
                 delegate: RowLayout {
                     Layout.fillWidth: true
-                    spacing: 9
+                    spacing: 12
 
                     Rectangle {
-                        Layout.preferredWidth: 6
-                        Layout.preferredHeight: 6
+                        Layout.preferredWidth: 8
+                        Layout.preferredHeight: 8
                         radius: 4
                         color: modelData.accent
                     }
@@ -716,14 +711,14 @@ Page {
                     Text {
                         text: modelData.label
                         color: root.textSoft
-                        font: root.smallFont
-                        Layout.preferredWidth: 58
+                        font: root.bodyFont
+                        Layout.preferredWidth: 64
                     }
 
                     Text {
                         text: modelData.value
                         color: root.textPrimary
-                        font: root.smallFont
+                        font: root.bodyFont
                         Layout.fillWidth: true
                         elide: Text.ElideMiddle
                     }
@@ -737,31 +732,32 @@ Page {
         property string detail
 
         Layout.fillWidth: true
-        spacing: 9
+        spacing: 14
 
         GlassPanel {
             theme: root.uiTheme
             tone: "raised"
-            Layout.preferredWidth: 22
-            Layout.preferredHeight: 22
-            radius: 11
+            Layout.preferredWidth: 26
+            Layout.preferredHeight: 26
+            radius: 13
             border.color: root.borderStrong
+            color: Qt.rgba(0.1, 0.15, 0.2, 0.5)
 
             Text {
                 anchors.centerIn: parent
                 text: parent.parent.indexText
-                color: root.textSecondary
-                font: root.smallFont
+                color: root.textPrimary
+                font: Qt.font({ family: root.uiTheme.displayFamily, pixelSize: 12, weight: Font.Bold })
             }
         }
 
         Text {
             text: parent.detail
             color: root.textSecondary
-            font: root.smallFont
+            font: root.bodyFont
             wrapMode: Text.Wrap
             Layout.fillWidth: true
-            lineHeight: 1.08
+            lineHeight: 1.2
         }
     }
 
@@ -769,5 +765,6 @@ Page {
         Layout.fillWidth: true
         Layout.preferredHeight: 1
         color: root.border
+        opacity: 0.6
     }
 }
