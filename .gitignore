@@ -1,0 +1,40 @@
+# Build and dependency outputs
+build/
+dist/
+out/
+_deps/
+
+# Runtime output
+clips/
+ghostreplay.log
+*.log
+*.bak
+stdout*.txt
+stderr*.txt
+run_stdout.txt
+run_stderr.log
+icon_smoke_stdout.txt
+icon_smoke_stderr.txt
+ui_*stdout.txt
+ui_*stderr.txt
+
+# Local configuration
+ghostreplay.json
+ghostreplay.conf
+
+# Generated screenshots and local media captures
+ui_*.png
+icon_extract*.png
+*.mp4
+
+# Local binary dependency archives/extracts
+*.7z
+mpv-dev/
+
+# AI agent / Codex session working files
+.agents/
+.nexus/
+.serena/
+*.jsonl
+skills-lock.json
+aqtinstall.log

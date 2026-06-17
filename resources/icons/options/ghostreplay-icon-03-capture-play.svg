@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Ghost Replay icon option 3">
+  <rect width="256" height="256" rx="54" fill="#0D0B12"/>
+  <path d="M70 94V70h36M150 70h36v24M186 162v24h-36M106 186H70v-24"
+        fill="none" stroke="#B9B4C7" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="82" y="82" width="92" height="92" rx="26" fill="#1B1725" stroke="#5C5470" stroke-width="8"/>
+  <path d="M116 101v54l44-27-44-27Z" fill="#FAF0E6"/>
+</svg>

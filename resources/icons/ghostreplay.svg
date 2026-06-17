@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Ghost Replay">
+  <rect width="256" height="256" rx="56" fill="#0D0B12"/>
+  <rect x="26" y="26" width="204" height="204" rx="46" fill="#14111C" stroke="#2C2638" stroke-width="2"/>
+  <path d="M104 94c-5-8-15-13-28-13c-22 0-38 17-38 39s16 39 39 39c18 0 31-10 35-27H80"
+        fill="none" stroke="#FAF0E6" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M138 160V84h33c18 0 30 10 30 27c0 12-7 21-18 25l21 20"
+        fill="none" stroke="#B9B4C7" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M138 122h31" fill="none" stroke="#B9B4C7" stroke-width="14" stroke-linecap="round"/>
+</svg>

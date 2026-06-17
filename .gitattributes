@@ -1,0 +1,30 @@
+# Default: normalize all text files to LF in repo
+* text=auto
+
+# C++ source — LF in repo, CRLF on Windows checkout
+*.cpp text eol=lf
+*.h   text eol=lf
+*.c   text eol=lf
+
+# CMake / build
+CMakeLists.txt text eol=lf
+*.cmake        text eol=lf
+
+# QML / Qt resources
+*.qml text eol=lf
+*.qrc text eol=lf
+*.qss text eol=lf
+
+# Scripts / config
+*.json text eol=lf
+*.md   text eol=lf
+*.txt  text eol=lf
+*.svg  text eol=lf
+*.conf text eol=lf
+
+# Binary files — no line ending conversion
+*.ttf  binary
+*.png  binary
+*.ico  binary
+*.mp4  binary
+*.7z   binary

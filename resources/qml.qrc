@@ -1,0 +1,19 @@
+<RCC>
+    <qresource prefix="/qml">
+        <file alias="Theme.qml">qml/Theme.qml</file>
+        <file alias="GlassPanel.qml">qml/GlassPanel.qml</file>
+        <file alias="AppButton.qml">qml/AppButton.qml</file>
+        <file alias="AppToggle.qml">qml/AppToggle.qml</file>
+        <file alias="AppLogo.qml">qml/AppLogo.qml</file>
+        <file alias="AppChip.qml">qml/AppChip.qml</file>
+        <file alias="AppScrollBar.qml">qml/AppScrollBar.qml</file>
+        <file alias="AppThumbnail.qml">qml/AppThumbnail.qml</file>
+        <file alias="ReplayBufferStrip.qml">qml/ReplayBufferStrip.qml</file>
+        <file alias="MainWindow.qml">qml/MainWindow.qml</file>
+        <file alias="DashboardPage.qml">qml/DashboardPage.qml</file>
+        <file alias="ClipsPage.qml">qml/ClipsPage.qml</file>
+        <file alias="ClipEditorPage.qml">qml/ClipEditorPage.qml</file>
+        <file alias="SettingsPage.qml">qml/SettingsPage.qml</file>
+        <file alias="MonoIcon.qml">qml/MonoIcon.qml</file>
+    </qresource>
+</RCC>

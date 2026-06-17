@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ghost Replay Raster Direction Board</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #08070c;
+    --shell: #0d0b12;
+    --panel: #14111c;
+    --tile: #1b1725;
+    --raised: #241f30;
+    --purple: #5c5470;
+    --lav: #b9b4c7;
+    --cream: #faf0e6;
+    --red: #ff8a80;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 34px;
+    background: radial-gradient(circle at 50% -20%, #201a2d 0, var(--bg) 34rem);
+    color: var(--cream);
+    font-family: "Segoe UI", system-ui, sans-serif;
+  }
+  h1 { margin: 0 0 8px; font-size: 20px; font-weight: 650; }
+  p { margin: 0 0 26px; color: var(--lav); font-size: 13px; }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(180px, 1fr));
+    gap: 18px;
+    max-width: 900px;
+  }
+  figure {
+    margin: 0;
+    padding: 18px;
+    border: 1px solid #2c2638;
+    border-radius: 14px;
+    background: color-mix(in srgb, var(--panel) 92%, var(--purple));
+  }
+  .icon {
+    position: relative;
+    width: 128px;
+    height: 128px;
+    margin: 0 auto 12px;
+    border-radius: 30px;
+    background: linear-gradient(145deg, #0d0b12, #171321);
+    box-shadow: inset 0 0 0 1px #2c2638, 0 18px 34px #0009;
+    overflow: hidden;
+  }
+  figcaption { text-align: center; color: var(--lav); font-size: 13px; }
+  .soft { position: absolute; inset: 18px; border-radius: 28px; background: var(--tile); box-shadow: inset 0 0 0 1px #4a435c; }
+  .play {
+    position: absolute;
+    width: 0; height: 0;
+    border-top: 20px solid transparent;
+    border-bottom: 20px solid transparent;
+    border-left: 34px solid var(--cream);
+  }
+  .loop {
+    position: absolute;
+    border: 8px solid var(--lav);
+    border-right-color: transparent;
+    border-radius: 50%;
+  }
+  .corner { position: absolute; width: 25px; height: 25px; border: 6px solid var(--lav); }
+  .tl { left: 28px; top: 28px; border-right: 0; border-bottom: 0; border-radius: 9px 0 0 0; }
+  .tr { right: 28px; top: 28px; border-left: 0; border-bottom: 0; border-radius: 0 9px 0 0; }
+  .bl { left: 28px; bottom: 28px; border-right: 0; border-top: 0; border-radius: 0 0 0 9px; }
+  .br { right: 28px; bottom: 28px; border-left: 0; border-top: 0; border-radius: 0 0 9px 0; }
+  .bar { position: absolute; height: 8px; border-radius: 4px; background: var(--lav); }
+
+  .i1 .loop { inset: 33px; transform: rotate(-35deg); }
+  .i1 .play { left: 56px; top: 44px; }
+  .i1::after { content: ""; position: absolute; right: 32px; top: 30px; width: 30px; height: 30px; border-top: 8px solid var(--lav); border-right: 8px solid var(--lav); border-radius: 4px; }
+
+  .i2 .soft { inset: 38px; border-radius: 22px; }
+  .i2 .play { left: 57px; top: 44px; }
+
+  .i3 .soft { inset: 30px 22px 36px; border-radius: 20px; }
+  .i3::before { content: ""; position: absolute; left: 22px; right: 22px; top: 55px; height: 6px; background: var(--purple); border-radius: 6px; }
+  .i3 .loop { left: 44px; top: 63px; width: 50px; height: 50px; border-width: 7px; }
+  .i3 .play { left: 62px; top: 75px; transform: scale(.55); transform-origin: left top; }
+
+  .i4 .ghost {
+    position: absolute; left: 34px; top: 24px; width: 60px; height: 84px;
+    border: 7px solid var(--lav); border-bottom: 0; border-radius: 30px 30px 8px 8px;
+  }
+  .i4 .ghost::after { content: ""; position: absolute; left: -7px; right: -7px; bottom: -15px; height: 24px; background: linear-gradient(135deg, transparent 0 24%, var(--lav) 25% 35%, transparent 36% 49%, var(--lav) 50% 61%, transparent 62% 74%, var(--lav) 75% 85%, transparent 86%); }
+  .i4 .play { left: 58px; top: 51px; transform: scale(.65); transform-origin: left top; }
+
+  .i5 .loop { left: 30px; top: 30px; width: 68px; height: 68px; border-color: var(--purple); border-right-color: transparent; }
+  .i5 .loop.two { left: 45px; top: 45px; width: 52px; height: 52px; border-color: var(--lav); border-left-color: transparent; }
+  .i5 .play { left: 59px; top: 48px; transform: scale(.7); transform-origin: left top; }
+
+  .i6 .g { position: absolute; left: 33px; top: 38px; width: 39px; height: 52px; border: 8px solid var(--cream); border-right-color: transparent; border-radius: 22px; }
+  .i6 .r { position: absolute; right: 31px; top: 38px; width: 39px; height: 52px; border: 8px solid var(--lav); border-bottom-color: transparent; border-radius: 19px 19px 0 0; }
+  .i6 .r::after { content: ""; position: absolute; right: -17px; bottom: -25px; width: 34px; height: 8px; background: var(--lav); transform: rotate(47deg); border-radius: 8px; }
+
+  .i7 .soft { left: 34px; right: 34px; top: 26px; bottom: 34px; }
+  .i7 .bar.one { left: 48px; right: 48px; top: 52px; background: var(--purple); }
+  .i7 .bar.two { left: 48px; width: 46px; top: 70px; background: var(--purple); }
+  .i7 .loop { left: 50px; top: 70px; width: 46px; height: 46px; border-width: 6px; }
+  .i7 .play { left: 67px; top: 82px; transform: scale(.48); transform-origin: left top; }
+
+  .i8 .after { position: absolute; left: 30px; top: 30px; width: 56px; height: 56px; border-radius: 18px; background: #5c547066; }
+  .i8 .front { position: absolute; left: 48px; top: 48px; width: 58px; height: 58px; border-radius: 18px; background: var(--raised); box-shadow: inset 0 0 0 1px #4a435c; }
+  .i8 .play { left: 68px; top: 58px; transform: scale(.55); transform-origin: left top; }
+  .i8 .bar { left: 36px; right: 36px; bottom: 28px; }
+
+  .i9 .mask { position: absolute; left: 34px; top: 28px; width: 60px; height: 70px; border-radius: 30px 30px 18px 18px; background: var(--lav); }
+  .i9 .mask::after { content: ""; position: absolute; left: 13px; top: 12px; width: 34px; height: 44px; border-radius: 20px 20px 12px 12px; background: var(--shell); }
+  .i9 .play { left: 60px; top: 48px; transform: scale(.62); transform-origin: left top; }
+  .i9 .bar { left: 52px; right: 52px; bottom: 34px; background: var(--purple); }
+</style>
+<h1>Ghost Replay Icon Directions</h1>
+<p>Raster-first silhouette board. These are directions to pick from, not final SVG production assets.</p>
+<div class="grid">
+  <figure><div class="icon i1"><span class="loop"></span><span class="play"></span></div><figcaption>1 Replay Core</figcaption></figure>
+  <figure><div class="icon i2"><span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span><span class="soft"></span><span class="play"></span></div><figcaption>2 Capture Tile</figcaption></figure>
+  <figure><div class="icon i3"><span class="soft"></span><span class="loop"></span><span class="play"></span></div><figcaption>3 Window Replay</figcaption></figure>
+  <figure><div class="icon i4"><span class="ghost"></span><span class="play"></span></div><figcaption>4 Abstract Phantom</figcaption></figure>
+  <figure><div class="icon i5"><span class="loop"></span><span class="loop two"></span><span class="play"></span></div><figcaption>5 Buffer Ring</figcaption></figure>
+  <figure><div class="icon i6"><span class="g"></span><span class="r"></span></div><figcaption>6 GR Mark</figcaption></figure>
+  <figure><div class="icon i7"><span class="soft"></span><span class="bar one"></span><span class="bar two"></span><span class="loop"></span><span class="play"></span></div><figcaption>7 Saved Replay</figcaption></figure>
+  <figure><div class="icon i8"><span class="after"></span><span class="front"></span><span class="play"></span><span class="bar"></span></div><figcaption>8 Afterimage Frames</figcaption></figure>
+  <figure><div class="icon i9"><span class="mask"></span><span class="play"></span><span class="bar"></span></div><figcaption>9 Negative Phantom</figcaption></figure>
+</div>

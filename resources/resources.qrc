@@ -1,0 +1,37 @@
+<RCC>
+    <qresource prefix="/">
+        <file>branding/ghost-loop.png</file>
+        <file>fonts/Inter-opsz-wght.ttf</file>
+        <file>fonts/SpaceGrotesk-wght.ttf</file>
+        <file>icons/ghostreplay.svg</file>
+        <file>icons/ui/audio.svg</file>
+        <file>icons/ui/back.svg</file>
+        <file>icons/ui/buffer.svg</file>
+        <file>icons/ui/clips.svg</file>
+        <file>icons/ui/clipboard.svg</file>
+        <file>icons/ui/delete.svg</file>
+        <file>icons/ui/desktop.svg</file>
+        <file>icons/ui/edit.svg</file>
+        <file>icons/ui/export.svg</file>
+        <file>icons/ui/folder.svg</file>
+        <file>icons/ui/grid.svg</file>
+        <file>icons/ui/hotkey.svg</file>
+        <file>icons/ui/list.svg</file>
+        <file>icons/ui/open.svg</file>
+        <file>icons/ui/output.svg</file>
+        <file>icons/ui/overview.svg</file>
+        <file>icons/ui/pause.svg</file>
+        <file>icons/ui/play.svg</file>
+        <file>icons/ui/refresh.svg</file>
+        <file>icons/ui/reveal.svg</file>
+        <file>icons/ui/save.svg</file>
+        <file>icons/ui/search.svg</file>
+        <file>icons/ui/settings.svg</file>
+        <file>icons/ui/trim-in.svg</file>
+        <file>icons/ui/trim-out.svg</file>
+        <file>icons/ui/video.svg</file>
+        <file>icons/ui/volume.svg</file>
+        <file>themes/dark.qss</file>
+        <file>themes/light.qss</file>
+    </qresource>
+</RCC>

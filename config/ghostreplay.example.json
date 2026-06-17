@@ -1,0 +1,31 @@
+{
+  "monitor_index": 0,
+  "capture_width": 0,
+  "capture_height": 0,
+  "capture_source": "desktop",
+  "replay_duration_sec": 300,
+  "fps": 60,
+
+  "codec": "h264",
+  "encoder_backend": "auto",
+  "cqp": 23,
+  "keyframe_interval": 120,
+  "preset": 4,
+
+  "audio": {
+    "enabled": true,
+    "device_id": "",
+    "channels": 2,
+    "sample_rate": 48000,
+    "bitrate_kbps": 192,
+    "codec": "aac"
+  },
+
+  "hotkey_modifiers": 1,
+  "hotkey_vk": 121,
+
+  "output_dir": "clips",
+  "launch_at_startup": false,
+  "log_file": "ghostreplay.log",
+  "log_level": 1
+}
