@@ -17,8 +17,10 @@ class HotkeyManager;
 class SettingsWindow;
 class Backend;
 class TranscodeJob;
+class DisplayTopologyMonitor;
 class Config;
 struct EncoderConfig;
+struct DisplaySnapshot;
 
 // ── GhostReplay Qt Application ─────────────────────────────────
 // Wraps the capture pipeline behind a system-tray icon.
@@ -60,6 +62,11 @@ private:
     void updateTrayTooltip();
     void rebindHotkey();
     void applySettings(bool captureRestartRequired);
+    void initializeDisplayMonitoring();
+    void onDisplayTopologySettled();
+    void updateBackendDisplayState(const DisplaySnapshot& snapshot);
+    void pauseCaptureAfterRestart();
+    void restartCaptureAfterDisplayChange(const DisplaySnapshot& snapshot, const QString& reason);
     void showMainWindow();
     void hideMainWindowToTray();
     void performExport();                     // Actual flush + mux
@@ -78,6 +85,7 @@ private:
     QAction* m_action_save = nullptr;
     QAction* m_action_toggle = nullptr;
     QWindow* m_main_window = nullptr;
+    DisplayTopologyMonitor* m_display_monitor = nullptr;
     bool m_tray_hint_shown = false;
 
     Backend* m_backend = nullptr;            // QML data bridge (owned, no parent needed)

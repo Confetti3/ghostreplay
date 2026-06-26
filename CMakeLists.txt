@@ -95,7 +95,7 @@ else()
 endif()
 
 # Qt 6 (optional for Phase 0, required for Phase 1+)
-find_package(Qt6 QUIET COMPONENTS Core Widgets Quick QuickControls2 QuickDialogs2 Multimedia)
+find_package(Qt6 QUIET COMPONENTS Core Widgets Quick QuickControls2 QuickDialogs2 Multimedia Network)
 if(Qt6_FOUND)
     message(STATUS "Qt 6 found — UI features enabled")
 else()
@@ -136,6 +136,7 @@ set(SOURCES
 # Qt UI sources (compiled only when HAS_QT6 is defined)
 set(QT_UI_SOURCES
     src/ui/GRApplication.cpp
+    src/ui/DisplayTopologyMonitor.cpp
     src/ui/SettingsWindow.cpp
     src/ui/Backend.cpp
     src/ui/WindowChromeController.cpp
@@ -147,6 +148,7 @@ set(QT_UI_SOURCES
 
 set(QT_UI_HEADERS
     src/ui/GRApplication.h
+    src/ui/DisplayTopologyMonitor.h
     src/ui/SettingsWindow.h
     src/ui/Backend.h
     src/ui/WindowChromeController.h
@@ -228,6 +230,7 @@ if(Qt6_FOUND)
         Qt6::QuickControls2
         Qt6::QuickDialogs2
         Qt6::Multimedia
+        Qt6::Network
     )
     target_compile_definitions(ghostreplay PRIVATE HAS_QT6)
 
@@ -235,6 +238,8 @@ if(Qt6_FOUND)
         set_target_properties(ghostreplay PROPERTIES WIN32_EXECUTABLE TRUE)
         if(MSVC)
             target_link_options(ghostreplay PRIVATE /SUBSYSTEM:WINDOWS)
+            target_link_options(ghostreplay PRIVATE
+                "/MANIFESTINPUT:${CMAKE_SOURCE_DIR}/resources/windows/ghostreplay.exe.manifest")
         endif()
     endif()
 
@@ -347,6 +352,7 @@ if(BUILD_TESTS)
     if(Qt6_FOUND)
         target_sources(ghostreplay_tests PRIVATE src/util/FileActions.cpp)
         target_sources(ghostreplay_tests PRIVATE src/util/ReleaseHealth.cpp src/util/ClipProbe.cpp)
+        target_sources(ghostreplay_tests PRIVATE src/ui/DisplayTopologyMonitor.cpp)
         target_link_libraries(ghostreplay_tests PRIVATE Qt6::Core Qt6::Gui ${DXGI_LIB} ${SHELL32_LIB})
         target_compile_definitions(ghostreplay_tests PRIVATE HAS_QT6 GHOST_REPLAY_VERSION="${PROJECT_VERSION}")
     endif()

@@ -1,4 +1,5 @@
 #include "ui/SettingsWindow.h"
+#include "ui/DisplayTopologyMonitor.h"
 #include "util/Config.h"
 #include "util/ReleaseHealth.h"
 #include "encode/EncoderSelector.h"
@@ -62,6 +63,21 @@ void SettingsWindow::createVideoTab(QTabWidget* tabs)
     m_cmb_capture_source->addItem("Game", QString("game"));
     m_cmb_capture_source->setToolTip("Window uses the Windows picker. Game captures the foreground game window without hooks.");
     form->addRow("Capture source:", m_cmb_capture_source);
+
+    m_cmb_monitor_index = new QComboBox();
+    const QVariantList displays = DisplayTopologyMonitor::availableDisplays();
+    for (const QVariant& display : displays)
+    {
+        const QVariantMap map = display.toMap();
+        m_cmb_monitor_index->addItem(map["label"].toString(), map["index"].toInt());
+    }
+    m_cmb_monitor_index->setToolTip("Select the display to capture when capturing the Desktop.");
+    form->addRow("Target display:", m_cmb_monitor_index);
+
+    auto updateMonitorComboEnabled = [this]() {
+        m_cmb_monitor_index->setEnabled(m_cmb_capture_source->currentData().toString() == "desktop");
+    };
+    connect(m_cmb_capture_source, &QComboBox::currentIndexChanged, updateMonitorComboEnabled);
 
     m_cmb_codec = new QComboBox();
     m_cmb_codec->addItem("H.264", QString("h264"));
@@ -231,6 +247,9 @@ void SettingsWindow::configToUi()
     // Video
     int source_idx = m_cmb_capture_source->findData(QString::fromStdString(m_config.capture_source));
     if (source_idx >= 0) m_cmb_capture_source->setCurrentIndex(source_idx);
+    int mon_idx = m_cmb_monitor_index->findData(m_config.monitor_index);
+    if (mon_idx >= 0) m_cmb_monitor_index->setCurrentIndex(mon_idx);
+    m_cmb_monitor_index->setEnabled(m_config.capture_source == "desktop");
     int codec_idx = m_cmb_codec->findData(QString::fromStdString(m_config.codec));
     if (codec_idx >= 0) m_cmb_codec->setCurrentIndex(codec_idx);
     int backend_idx = m_cmb_encoder_backend->findData(
@@ -269,6 +288,7 @@ void SettingsWindow::uiToConfig()
 {
     // Video
     m_config.capture_source = m_cmb_capture_source->currentData().toString().toStdString();
+    m_config.monitor_index = m_cmb_monitor_index->currentData().toInt();
     m_config.codec = m_cmb_codec->currentData().toString().toStdString();
     m_config.encoder_backend = m_cmb_encoder_backend->currentData().toString().toStdString();
     m_config.cqp = m_spn_cqp->value();

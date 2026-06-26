@@ -16,7 +16,7 @@ Page {
 
     RowLayout {
         anchors.fill: parent
-        spacing: 20
+        spacing: 14
 
         Item {
             id: mainPane
@@ -27,12 +27,12 @@ Page {
 
             ColumnLayout {
                 anchors.fill: parent
-                anchors.margins: 24
-                spacing: 24
+                anchors.margins: 18
+                spacing: 18
 
                 OverviewHeader {
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 64
+                    Layout.preferredHeight: 56
                 }
 
                 GlassPanel {
@@ -40,18 +40,18 @@ Page {
                     theme: root.uiTheme
                     tone: "raised"
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 110
+                    Layout.preferredHeight: 96
                     border.color: Qt.rgba(1.0, 0.52, 0.52, 0.40)
 
                     RowLayout {
                         anchors.fill: parent
-                        anchors.margins: 16
-                        spacing: 14
+                        anchors.margins: 14
+                        spacing: 12
 
                         Rectangle {
                             Layout.preferredWidth: 46
                             Layout.preferredHeight: 46
-                            radius: 23
+                            radius: 0
                             color: Qt.rgba(1.0, 0.48, 0.48, 0.11)
                             border.color: root.recordRed
                             border.width: 1
@@ -100,6 +100,7 @@ Page {
                     recording: backend.recording
                     bufferSeconds: backend.bufferSeconds
                     bufferPackets: backend.bufferPackets
+                    targetDurationSec: backend.replayDurationSec
                     targetName: backend.currentGame || "Desktop"
                     shortcut: root.shortcutText()
                     exportBusy: backend.exportBusy
@@ -107,29 +108,22 @@ Page {
                     exportStatus: backend.exportStatus
                     onSaveRequested: backend.saveClip()
                     onRetryRequested: backend.retryCapture()
-                    Layout.preferredHeight: 128
+                    Layout.preferredHeight: 108
                 }
 
                 GridLayout {
+                    visible: backend.captureAvailable
                     Layout.fillWidth: true
-                    columns: mainPane.width > 800 ? 4 : (mainPane.width > 500 ? 2 : 1)
-                    columnSpacing: 16
-                    rowSpacing: 16
+                    columns: mainPane.width > 700 ? 3 : (mainPane.width > 500 ? 2 : 1)
+                    columnSpacing: 14
+                    rowSpacing: 14
 
                     StatusCard {
                         icon: root.iconVideo
                         label: "Capture"
                         value: backend.captureAvailable ? (backend.recording ? "Live" : "Paused") : "Unavailable"
                         detail: backend.captureAvailable ? (backend.currentGame || "Desktop") : "Retry from settings"
-                        accentColor: backend.captureAvailable ? root.accentBlue : root.recordRed
-                    }
-
-                    StatusCard {
-                        icon: root.iconBuffer
-                        label: "Buffer"
-                        value: bufferReady() ? backend.bufferSeconds + "s ready" : "Warming up"
-                        detail: bufferReady() ? backend.bufferPackets + " packets" : "Waiting"
-                        accentColor: bufferReady() ? root.accent : root.warningYellow
+                        accentColor: backend.captureAvailable ? (backend.recording ? root.accent : root.inactive) : root.recordRed
                     }
 
                     StatusCard {
@@ -155,23 +149,23 @@ Page {
                     tone: "surface"
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    sheenOpacity: 0.9
-                    depth: 0.95
-                    color: Qt.rgba(0.038, 0.055, 0.058, 0.94)
-                    border.color: Qt.rgba(root.uiTheme.border.r, root.uiTheme.border.g, root.uiTheme.border.b, 0.74)
+                    sheenOpacity: 0
+                    depth: 0
+                    border.color: root.uiTheme.border
 
                     ColumnLayout {
                         anchors.fill: parent
-                        anchors.margins: 18
-                        spacing: 16
+                        anchors.margins: 14
+                        spacing: 12
 
                         RowLayout {
                             Layout.fillWidth: true
-                            Layout.preferredHeight: 38
+                            Layout.preferredHeight: 34
                             spacing: 10
 
                             ColumnLayout {
                                 Layout.fillWidth: true
+                                Layout.minimumWidth: 0
                                 spacing: 2
 
                                 Text {
@@ -208,7 +202,7 @@ Page {
                             Layout.fillWidth: true
                             Layout.fillHeight: true
                             clip: true
-                            spacing: 10
+                            spacing: 8
                             model: overviewClips
                             boundsBehavior: Flickable.StopAtBounds
 
@@ -243,31 +237,31 @@ Page {
         GlassPanel {
             theme: root.uiTheme
             tone: "rail"
-            Layout.preferredWidth: page.width >= 1120 ? 320 : 0
-            Layout.minimumWidth: page.width >= 1120 ? 320 : 0
-            Layout.maximumWidth: page.width >= 1120 ? 320 : 0
+            Layout.preferredWidth: page.width >= 1180 ? 264 : 0
+            Layout.minimumWidth: page.width >= 1180 ? 264 : 0
+            Layout.maximumWidth: page.width >= 1180 ? 264 : 0
             Layout.fillHeight: true
-            visible: page.width >= 1120
+            visible: page.width >= 1180
             opacity: page.appearOpacity
             transform: Translate { x: page.appearOffset }
 
             ColumnLayout {
                 anchors.fill: parent
-                anchors.margins: 24
-                spacing: 24
+                anchors.margins: 18
+                spacing: 18
 
                 ColumnLayout {
                     Layout.fillWidth: true
                     spacing: 6
 
                     Text {
-                        text: "Capture health"
+                        text: "Output"
                         color: root.textPrimary
                         font: Qt.font({ family: root.uiTheme.displayFamily, pixelSize: 20, weight: Font.DemiBold })
                     }
 
                     Text {
-                        text: backend.captureAvailable ? "Recording status and output readiness." : "Capture needs attention before new clips can be saved."
+                        text: "Where clips land and how to save them."
                         color: root.textSoft
                         font: root.bodyFont
                         wrapMode: Text.Wrap
@@ -276,38 +270,12 @@ Page {
                 }
 
                 InspectorSection {
-                    title: "PIPELINE"
+                    title: "OUTPUT"
                     rows: [
-                        { label: "Capture", value: backend.captureAvailable ? (backend.recording ? "DXGI active" : "Paused") : "Unavailable", accent: backend.captureAvailable ? (backend.recording ? root.successGreen : root.inactive) : root.recordRed },
-                        { label: "Encode", value: backend.captureCodec.toUpperCase() + " preset " + backend.capturePreset, accent: root.successGreen },
-                        { label: "Buffer", value: bufferReady() ? backend.bufferSeconds + "s rolling window" : "Warming up", accent: bufferReady() ? root.accent : root.warningYellow },
-                        { label: "Save", value: "MP4 export on demand", accent: root.textSecondary }
-                    ]
-                }
-
-                InspectorSection {
-                    title: "SESSION"
-                    rows: [
-                        { label: "Target", value: backend.currentGame || "Desktop", accent: root.successGreen },
-                        { label: "Audio", value: backend.audioActive ? "WASAPI loopback" : "Disabled", accent: backend.audioActive ? root.successGreen : root.inactive },
+                        { label: "Target", value: backend.currentGame || "Desktop", accent: root.accent },
                         { label: "Hotkey", value: root.shortcutText(), accent: root.accent },
-                        { label: "Output", value: "Clips", accent: root.textSecondary }
+                        { label: "Folder", value: backend.outputDir, accent: root.textSecondary }
                     ]
-                }
-
-                ColumnLayout {
-                    Layout.fillWidth: true
-                    spacing: 12
-
-                    Text {
-                        text: "WORKFLOW"
-                        color: root.textMuted
-                        font: Qt.font({ family: root.uiTheme.displayFamily, pixelSize: 11, weight: Font.DemiBold, capitalization: Font.AllUppercase })
-                    }
-
-                    StepRow { indexText: "1"; detail: "Keep capture live while you play or work." }
-                    StepRow { indexText: "2"; detail: "Press " + root.shortcutText() + " after the moment lands." }
-                    StepRow { indexText: "3"; detail: "Share or reveal it from Clips." }
                 }
 
                 Item { Layout.fillHeight: true }
@@ -322,7 +290,7 @@ Page {
                         font: root.smallFont
                     }
 
-                    Rectangle { width: 4; height: 4; radius: 2; color: root.textSoft; opacity: 0.5 }
+                    Rectangle { width: 3; height: 3; radius: 0; color: root.textSoft; opacity: 0.5 }
 
                     Text {
                         text: "v" + backend.appVersion
@@ -337,7 +305,7 @@ Page {
     function videoProfile() {
         let res = backend.captureWidth > 0 && backend.captureHeight > 0
             ? backend.captureWidth + "x" + backend.captureHeight
-            : "Native"
+            : (backend.captureDisplayResolution.length > 0 ? backend.captureDisplayResolution : "Native")
         return res + " " + backend.captureFps
     }
 
@@ -394,27 +362,26 @@ Page {
     component OverviewHeader: Item {
         RowLayout {
             anchors.fill: parent
-            spacing: 16
+            spacing: 12
 
             GlassPanel {
                 theme: root.uiTheme
                 tone: "raised"
-                Layout.preferredWidth: 64
-                Layout.preferredHeight: 64
-                radius: 20
-                sheenOpacity: 1.12
-                depth: 1.18
-                color: Qt.rgba(0.055, 0.095, 0.115, 0.92)
-                border.color: Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.38)
+                Layout.preferredWidth: 52
+                Layout.preferredHeight: 52
+                radius: 0
+                sheenOpacity: 0
+                depth: 0
+                border.color: root.uiTheme.border
 
                 MonoIcon {
                     anchors.centerIn: parent
                     source: root.iconOverview
-                    width: 32
-                    height: 32
-                    tint: root.accent
-                    glowColor: root.accent
-                    glowStrength: 0.3
+                    width: 26
+                    height: 26
+                    tint: root.textPrimary
+                    glowColor: root.textPrimary
+                    glowStrength: 0.22
                     treatment: "featured"
                     iconOpacity: 0.98
                 }
@@ -422,12 +389,13 @@ Page {
 
             ColumnLayout {
                 Layout.fillWidth: true
+                Layout.minimumWidth: 0
                 spacing: 4
 
                 Text {
                     text: "Overview"
                     color: root.textPrimary
-                    font: Qt.font({ family: root.uiTheme.displayFamily, pixelSize: 28, weight: Font.Bold })
+                    font: Qt.font({ family: root.uiTheme.displayFamily, pixelSize: 25, weight: Font.Bold })
                     elide: Text.ElideRight
                     Layout.fillWidth: true
                 }
@@ -450,15 +418,7 @@ Page {
                 AppChip {
                     theme: root.uiTheme
                     text: backend.captureAvailable ? (backend.recording ? "Recording" : "Paused") : "Unavailable"
-                    accentColor: backend.captureAvailable ? (backend.recording ? root.accent : root.warningYellow) : root.recordRed
-                    strong: true
-                }
-
-                AppChip {
-                    visible: mainPane.width >= 760
-                    theme: root.uiTheme
-                    text: root.shortcutText()
-                    accentColor: root.accentAmber
+                    accentColor: backend.captureAvailable ? (backend.recording ? root.accent : root.inactive) : root.recordRed
                     strong: true
                 }
             }
@@ -477,43 +437,49 @@ Page {
         theme: root.uiTheme
         tone: "raised"
         Layout.fillWidth: true
-        Layout.preferredHeight: 110
-        sheenOpacity: mouse.containsMouse ? 1.2 : 0.8
-        depth: mouse.containsMouse ? 1.1 : 0.9
-        
-        color: mouse.pressed ? root.pressedBg : mouse.containsMouse ? Qt.rgba(0.08, 0.12, 0.16, 0.94) : Qt.rgba(0.05, 0.07, 0.09, 0.8)
-        border.color: mouse.containsMouse ? Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.4) : Qt.rgba(root.uiTheme.border.r, root.uiTheme.border.g, root.uiTheme.border.b, 0.5)
+        Layout.preferredHeight: 92
+        sheenOpacity: 0
+        depth: 0
+        border.color: cardMouse.containsMouse ? root.uiTheme.borderStrong : root.uiTheme.border
 
-        Behavior on color { ColorAnimation { duration: 150; easing.type: Easing.OutCubic } }
-        Behavior on border.color { ColorAnimation { duration: 150; easing.type: Easing.OutCubic } }
+        MouseArea {
+            id: cardMouse
+            anchors.fill: parent
+            hoverEnabled: true
+            acceptedButtons: Qt.NoButton
+        }
 
         Rectangle {
-            x: 14
-            y: 14
-            width: 36
-            height: 36
-            radius: 18
-            color: Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.1)
-            
+            x: 12
+            y: 12
+            width: 32
+            height: 32
+            radius: 0
+            color: Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.08)
+            border.color: Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.28)
+            border.width: 1
+
             MonoIcon {
                 anchors.centerIn: parent
                 source: card.icon
-                width: 18
-                height: 18
-                tint: card.accentColor
-                glowColor: card.accentColor
-                glowStrength: 0.4
-                treatment: "featured"
+                width: 16
+                height: 16
+                tint: card.accentColor === root.accent ? root.textPrimary : Qt.lighter(card.accentColor, 1.35)
+                glowColor: card.accentColor === root.accent ? root.textPrimary : card.accentColor
+                glowStrength: 0.12
+                treatment: "plain"
             }
         }
 
         ColumnLayout {
             anchors.left: parent.left
-            anchors.leftMargin: 16
+            anchors.leftMargin: 52
             anchors.right: parent.right
             anchors.rightMargin: 16
+            anchors.top: parent.top
+            anchors.topMargin: 14
             anchors.bottom: parent.bottom
-            anchors.bottomMargin: 14
+            anchors.bottomMargin: 12
             spacing: 2
 
             Text {
@@ -524,7 +490,7 @@ Page {
             Text {
                 text: card.value
                 color: root.textPrimary
-                font: Qt.font({ family: root.uiTheme.displayFamily, pixelSize: 20, weight: Font.Bold })
+                font: Qt.font({ family: root.uiTheme.displayFamily, pixelSize: 18, weight: Font.Bold })
                 elide: Text.ElideRight
                 Layout.fillWidth: true
             }
@@ -537,12 +503,6 @@ Page {
             }
         }
 
-        MouseArea {
-            id: mouse
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-        }
     }
 
     component CompactClipRow: GlassPanel {
@@ -552,31 +512,33 @@ Page {
 
         theme: root.uiTheme
         tone: "surface"
-        height: 64
-        sheenOpacity: rowMouse.containsMouse ? 1.0 : 0.70
-        depth: rowMouse.containsMouse ? 1.04 : 0.82
-        color: rowMouse.pressed ? root.pressedBg : rowMouse.containsMouse ? Qt.rgba(0.075, 0.115, 0.125, 0.92) : Qt.rgba(0.025, 0.038, 0.042, 0.78)
-        border.color: rowMouse.containsMouse ? Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.4) : Qt.rgba(root.uiTheme.border.r, root.uiTheme.border.g, root.uiTheme.border.b, 0.64)
+        height: 58
+        sheenOpacity: 0
+        depth: 0
+        color: rowMouse.pressed ? root.pressedBg : rowMouse.containsMouse ? root.hoverBg : Qt.rgba(root.uiTheme.surfaceAlt.r, root.uiTheme.surfaceAlt.g, root.uiTheme.surfaceAlt.b, 0.42)
+        border.color: rowMouse.containsMouse ? root.uiTheme.borderStrong : root.uiTheme.border
 
         Behavior on color { ColorAnimation { duration: 150; easing.type: Easing.OutCubic } }
         Behavior on border.color { ColorAnimation { duration: 150; easing.type: Easing.OutCubic } }
 
         RowLayout {
             anchors.fill: parent
-            anchors.margins: 10
-            spacing: 16
+            anchors.margins: 8
+            spacing: 12
 
             AppThumbnail {
                 theme: root.uiTheme
-                Layout.preferredWidth: 84
-                Layout.preferredHeight: 46
+                Layout.preferredWidth: 76
+                Layout.preferredHeight: 42
                 clipPath: clipRow.clipData ? clipRow.clipData.path : ""
                 fallbackText: "No preview"
                 radius: themeTokens.radiusSm
+                hoverActive: rowMouse.containsMouse
             }
 
             ColumnLayout {
                 Layout.fillWidth: true
+                Layout.minimumWidth: 0
                 spacing: 2
 
                 Text {
@@ -597,9 +559,9 @@ Page {
             }
 
             TextButton {
-                text: "Share"
-                iconPath: root.iconEdit
-                Layout.preferredWidth: 100
+                text: "Export"
+                iconPath: root.iconExport
+                Layout.preferredWidth: 92
                 onClicked: if (clipRow.clipData) root.openClipEditor(clipRow.clipData)
             }
 
@@ -641,10 +603,10 @@ Page {
 
         theme: root.uiTheme
         tone: "raised"
-        Layout.preferredWidth: 36
-        Layout.preferredHeight: 36
-        color: miniMouse.pressed ? root.pressedBg : miniMouse.containsMouse ? Qt.rgba(0.12, 0.18, 0.22, 0.9) : root.panelRaised
-        border.color: miniMouse.containsMouse ? accentColor : root.border
+        Layout.preferredWidth: 34
+        Layout.preferredHeight: 34
+        color: miniMouse.pressed ? root.pressedBg : miniMouse.containsMouse ? root.hoverBg : "transparent"
+        border.color: miniMouse.containsMouse ? root.uiTheme.borderStrong : root.uiTheme.border
 
         Behavior on color { ColorAnimation { duration: 150 } }
 
@@ -654,9 +616,9 @@ Page {
             width: 16
             height: 16
             tint: miniMouse.containsMouse ? miniIconButton.accentColor : root.textSecondary
-            glowColor: miniMouse.containsMouse ? miniIconButton.accentColor : "transparent"
-            glowStrength: miniMouse.containsMouse ? 0.3 : 0.0
-            treatment: "compact"
+            glowColor: "transparent"
+            glowStrength: 0.0
+            treatment: "plain"
             iconOpacity: miniMouse.containsMouse ? 1.0 : 0.78
         }
 
@@ -702,9 +664,9 @@ Page {
                     spacing: 12
 
                     Rectangle {
-                        Layout.preferredWidth: 8
-                        Layout.preferredHeight: 8
-                        radius: 4
+                        Layout.preferredWidth: 6
+                        Layout.preferredHeight: 6
+                        radius: 0
                         color: modelData.accent
                     }
 
@@ -739,9 +701,9 @@ Page {
             tone: "raised"
             Layout.preferredWidth: 26
             Layout.preferredHeight: 26
-            radius: 13
-            border.color: root.borderStrong
-            color: Qt.rgba(0.1, 0.15, 0.2, 0.5)
+            radius: 0
+            sheenOpacity: 0
+            depth: 0
 
             Text {
                 anchors.centerIn: parent

@@ -30,6 +30,11 @@ class Backend : public QObject
     Q_PROPERTY(bool captureAvailable READ captureAvailable NOTIFY captureStatusChanged)
     Q_PROPERTY(QString captureError READ captureError NOTIFY captureStatusChanged)
     Q_PROPERTY(QVariantList healthChecks READ healthChecks NOTIFY healthChecksChanged)
+    Q_PROPERTY(QString captureDisplayLabel READ captureDisplayLabel NOTIFY displayStateChanged)
+    Q_PROPERTY(QString captureDisplayResolution READ captureDisplayResolution NOTIFY displayStateChanged)
+    Q_PROPERTY(QString captureDisplayScale READ captureDisplayScale NOTIFY displayStateChanged)
+    Q_PROPERTY(bool autoDisplayAdaptationEnabled READ autoDisplayAdaptationEnabled NOTIFY displayStateChanged)
+    Q_PROPERTY(QVariantList availableDisplays READ availableDisplays NOTIFY displayStateChanged)
     Q_PROPERTY(QString appVersion READ appVersion CONSTANT)
 
     // ── Config settings (QML flyout reads/writes these) ────
@@ -51,6 +56,7 @@ class Backend : public QObject
     Q_PROPERTY(int hotkeyVk READ hotkeyVk WRITE setHotkeyVk NOTIFY hotkeyVkChanged)
     Q_PROPERTY(QString outputDir READ outputDir WRITE setOutputDir NOTIFY outputDirChanged)
     Q_PROPERTY(bool launchAtStartup READ launchAtStartup WRITE setLaunchAtStartup NOTIFY launchAtStartupChanged)
+    Q_PROPERTY(int monitorIndex READ monitorIndex WRITE setMonitorIndex NOTIFY monitorIndexChanged)
 
 public:
     explicit Backend(QObject* parent = nullptr);
@@ -77,6 +83,11 @@ public:
     bool captureAvailable() const;
     QString captureError() const;
     QVariantList healthChecks() const;
+    QString captureDisplayLabel() const;
+    QString captureDisplayResolution() const;
+    QString captureDisplayScale() const;
+    bool autoDisplayAdaptationEnabled() const;
+    QVariantList availableDisplays() const;
     QString appVersion() const;
 
     // Config accessors
@@ -116,6 +127,8 @@ public:
     void setOutputDir(const QString& v);
     bool launchAtStartup() const;
     void setLaunchAtStartup(bool v);
+    int monitorIndex() const;
+    void setMonitorIndex(int v);
 
     // ── Data push (called by GRApplication) ───────────────
     void addRecentClip(const QString& path, const QString& name, const QString& timestamp);
@@ -126,6 +139,10 @@ public:
     void setExportState(bool busy, double progress, const QString& status, const QString& outputPath = QString());
     void setCaptureStatus(bool available, const QString& error);
     void setHealthChecks(const QVariantList& checks);
+    void setDisplayState(const QString& label,
+                         const QString& resolution,
+                         const QString& scale,
+                         bool autoAdaptationEnabled);
 
     // ── QML user actions ──────────────────────────────────
     Q_INVOKABLE void saveClip();
@@ -156,6 +173,7 @@ signals:
     void exportStateChanged();
     void captureStatusChanged();
     void healthChecksChanged();
+    void displayStateChanged();
     void configChanged();                    // Generic config change
 
     // Individual config property signals for QML binding
@@ -177,6 +195,7 @@ signals:
     void hotkeyVkChanged();
     void outputDirChanged();
     void launchAtStartupChanged();
+    void monitorIndexChanged();
 
     void settingsSaved(bool restartRequired);
     void userNotification(const QString& msg, const QString& severity);
@@ -216,6 +235,10 @@ private:
     bool m_captureAvailable = false;
     QString m_captureError;
     QVariantList m_healthChecks;
+    QString m_captureDisplayLabel = "Display";
+    QString m_captureDisplayResolution = "Native";
+    QString m_captureDisplayScale = "100%";
+    bool m_autoDisplayAdaptationEnabled = true;
 
     Config* m_cfg = nullptr;
 
@@ -238,4 +261,5 @@ private:
     int m_hotkeyVk = 121;
     QString m_outputDir = "clips";
     bool m_launchAtStartup = false;
+    int m_monitorIndex = 0;
 };

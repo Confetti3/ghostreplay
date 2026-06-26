@@ -13,10 +13,10 @@ ScrollBar {
 
     contentItem: Rectangle {
         implicitWidth: 7
-        radius: 4
+        radius: 0
         color: bar.pressed
-            ? (bar.theme ? bar.theme.textSecondary : "#D4DEEA")
-            : (bar.hovered ? (bar.theme ? bar.theme.textMuted : "#99A8BA") : (bar.theme ? bar.theme.textSoft : "#72839A"))
+            ? (bar.theme ? bar.theme.textSecondary : "#94A3B8")
+            : (bar.hovered ? (bar.theme ? bar.theme.textMuted : "#64748B") : (bar.theme ? bar.theme.textSoft : "#475569"))
         opacity: 0.92
     }
 }

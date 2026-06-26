@@ -182,12 +182,12 @@ Page {
         if (exportMode === "original_quality") return "Hardware encode near source quality."
         if (exportMode === "discord_25mb") return "Targets 25 MB with retry passes."
         if (exportMode === "twitter_512mb") return "Targets 512 MB with retry passes."
-        return "Hardware encode tuned for smaller sharing files."
+        return "Hardware encode tuned for smaller files."
     }
 
     function exportStatusTitle() {
-        if (backend.exportBusy) return "Exporting share clip"
-        if (exportSucceeded) return "Share clip is ready"
+        if (backend.exportBusy) return "Exporting clip"
+        if (exportSucceeded) return "Export is ready"
         if (exportFailed) return "Export needs attention"
         if (exportCancelled) return "Export cancelled"
         return "Ready to export"
@@ -285,12 +285,12 @@ Page {
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: 14
-        spacing: 12
+        anchors.margins: 10
+        spacing: 10
 
         RowLayout {
             Layout.fillWidth: true
-            spacing: 10
+            spacing: 8
 
             EditorButton {
                 iconSource: root.iconBack
@@ -300,8 +300,15 @@ Page {
 
             ColumnLayout {
                 Layout.fillWidth: true
+                Layout.minimumWidth: 0
                 spacing: 2
-                Text { text: "Share clip"; color: root.textPrimary; font: Qt.font({ family: root.uiTheme.displayFamily, pixelSize: 21, weight: Font.DemiBold }) }
+                Text {
+                    text: "Export clip"
+                    color: root.textPrimary
+                    font: Qt.font({ family: root.uiTheme.displayFamily, pixelSize: 21, weight: Font.DemiBold })
+                    elide: Text.ElideRight
+                    Layout.fillWidth: true
+                }
                 Text {
                     text: sourceClip ? sourceClip.name : "Choose a clip from the library."
                     color: root.textSoft
@@ -317,15 +324,15 @@ Page {
 
         FlowSteps {
             Layout.fillWidth: true
-            activeStep: backend.exportBusy || exportSucceeded || exportFailed || exportCancelled ? 2 : 0
+            activeStep: backend.exportBusy || exportSucceeded || exportFailed || exportCancelled ? 2 : (sourceClip ? 1 : 0)
         }
 
         GridLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
             columns: compactLayout ? 1 : 2
-            columnSpacing: 12
-            rowSpacing: 12
+            columnSpacing: 10
+            rowSpacing: 10
 
             GlassPanel {
                 Layout.fillWidth: true
@@ -333,27 +340,33 @@ Page {
                 Layout.minimumHeight: compactLayout ? 430 : 0
                 theme: root.uiTheme
                 tone: "surface"
+                radius: 0
+                sheenOpacity: 0
+                depth: 0
 
                 ColumnLayout {
                     anchors.fill: parent
-                    anchors.margins: 16
-                    spacing: 12
+                    anchors.margins: 12
+                    spacing: 10
 
                     GlassPanel {
                         id: previewFrame
                         Layout.fillWidth: true
                         Layout.fillHeight: true
-                        Layout.minimumHeight: 250
-                        Layout.preferredHeight: Math.max(300, Math.min(560, width / sourceAspectRatio))
+                        Layout.minimumHeight: 230
+                        Layout.preferredHeight: Math.max(280, Math.min(540, width / sourceAspectRatio))
                         theme: root.uiTheme
                         tone: "alt"
-                        color: "#040608"
+                        radius: 0
+                        sheenOpacity: 0
+                        depth: 0
+                        color: root.shell
                         border.color: root.borderStrong
                         clip: true
 
                         Rectangle {
                             anchors.fill: parent
-                            color: "#050607"
+                            color: root.shell
                             visible: true
                         }
 
@@ -404,7 +417,7 @@ Page {
 
                     RowLayout {
                         Layout.fillWidth: true
-                        spacing: 8
+                        spacing: 7
 
                         EditorButton {
                             iconSource: page.videoPlaying ? root.iconPause : root.iconPlay
@@ -452,6 +465,32 @@ Page {
                                 pausePreview()
                                 setPreviewPosition(value, true)
                             }
+                            background: Rectangle {
+                                x: scrubber.leftPadding
+                                y: scrubber.topPadding + scrubber.availableHeight / 2 - height / 2
+                                implicitWidth: 200
+                                implicitHeight: 4
+                                width: scrubber.availableWidth
+                                height: implicitHeight
+                                radius: 0
+                                color: root.border
+                                Rectangle {
+                                    width: scrubber.visualPosition * parent.width
+                                    height: parent.height
+                                    color: root.accent
+                                    radius: 0
+                                }
+                            }
+                            handle: Rectangle {
+                                x: scrubber.leftPadding + scrubber.visualPosition * (scrubber.availableWidth - width)
+                                y: scrubber.topPadding + scrubber.availableHeight / 2 - height / 2
+                                implicitWidth: 14
+                                implicitHeight: 14
+                                radius: 0
+                                color: scrubber.pressed ? root.accentStrong : (scrubber.hovered ? root.accentHover : root.textPrimary)
+                                border.color: root.textPrimary
+                                border.width: 1
+                            }
                         }
 
                         Text {
@@ -463,7 +502,7 @@ Page {
 
                     RowLayout {
                         Layout.fillWidth: true
-                        spacing: 10
+                        spacing: 8
 
                         RowLayout {
                             Layout.preferredWidth: 58
@@ -486,6 +525,32 @@ Page {
                             enabled: page.videoPlaybackUsable
                             onMoved: {
                                 page.previewVolume = value
+                            }
+                            background: Rectangle {
+                                x: volumeSlider.leftPadding
+                                y: volumeSlider.topPadding + volumeSlider.availableHeight / 2 - height / 2
+                                implicitWidth: 120
+                                implicitHeight: 4
+                                width: volumeSlider.availableWidth
+                                height: implicitHeight
+                                radius: 0
+                                color: root.border
+                                Rectangle {
+                                    width: volumeSlider.visualPosition * parent.width
+                                    height: parent.height
+                                    color: root.accent
+                                    radius: 0
+                                }
+                            }
+                            handle: Rectangle {
+                                x: volumeSlider.leftPadding + volumeSlider.visualPosition * (volumeSlider.availableWidth - width)
+                                y: volumeSlider.topPadding + volumeSlider.availableHeight / 2 - height / 2
+                                implicitWidth: 12
+                                implicitHeight: 12
+                                radius: 0
+                                color: volumeSlider.pressed ? root.accentStrong : (volumeSlider.hovered ? root.accentHover : root.textPrimary)
+                                border.color: root.textPrimary
+                                border.width: 1
                             }
                         }
 
@@ -522,6 +587,43 @@ Page {
                             to: Math.max(effectiveDuration, 1)
                             first.value: trimStartSec
                             second.value: trimEndSec
+                            background: Rectangle {
+                                x: trimSlider.leftPadding
+                                y: trimSlider.topPadding + trimSlider.availableHeight / 2 - height / 2
+                                implicitWidth: 200
+                                implicitHeight: 4
+                                width: trimSlider.availableWidth
+                                height: implicitHeight
+                                radius: 0
+                                color: root.border
+                                Rectangle {
+                                    x: trimSlider.first.visualPosition * parent.width
+                                    width: (trimSlider.second.visualPosition - trimSlider.first.visualPosition) * parent.width
+                                    height: parent.height
+                                    color: root.accent
+                                    radius: 0
+                                }
+                            }
+                            first.handle: Rectangle {
+                                x: trimSlider.leftPadding + trimSlider.first.visualPosition * (trimSlider.availableWidth - width)
+                                y: trimSlider.topPadding + trimSlider.availableHeight / 2 - height / 2
+                                implicitWidth: 14
+                                implicitHeight: 14
+                                radius: 0
+                                color: trimSlider.first.pressed ? root.accentStrong : (trimSlider.first.hovered ? root.accentHover : root.textPrimary)
+                                border.color: root.textPrimary
+                                border.width: 1
+                            }
+                            second.handle: Rectangle {
+                                x: trimSlider.leftPadding + trimSlider.second.visualPosition * (trimSlider.availableWidth - width)
+                                y: trimSlider.topPadding + trimSlider.availableHeight / 2 - height / 2
+                                implicitWidth: 14
+                                implicitHeight: 14
+                                radius: 0
+                                color: trimSlider.second.pressed ? root.accentStrong : (trimSlider.second.hovered ? root.accentHover : root.textPrimary)
+                                border.color: root.textPrimary
+                                border.width: 1
+                            }
                         }
 
                         Connections {
@@ -576,6 +678,9 @@ Page {
                 Layout.minimumHeight: compactLayout ? 420 : 0
                 theme: root.uiTheme
                 tone: "surface"
+                radius: 0
+                sheenOpacity: 0
+                depth: 0
 
                 ColumnLayout {
                     anchors.fill: parent
@@ -597,7 +702,7 @@ Page {
 
                             Text {
                                 Layout.fillWidth: true
-                                text: "Build a lighter share clip without changing the original file."
+                                    text: "Build a lighter export without changing the original file."
                                 color: root.textSoft
                                 font: root.smallFont
                                 wrapMode: Text.Wrap
@@ -605,7 +710,7 @@ Page {
 
                             FieldGroup {
                                 label: "Preset"
-                                ComboBox {
+                                FlatCombo {
                                     id: presetBox
                                     Layout.fillWidth: true
                                     textRole: "label"
@@ -643,7 +748,8 @@ Page {
                             RowLayout {
                                 Layout.fillWidth: true
                                 spacing: 8
-                                Switch {
+                                AppToggle {
+                                    theme: root.uiTheme
                                     checked: advancedExport
                                     onToggled: advancedExport = checked
                                 }
@@ -664,7 +770,7 @@ Page {
                             FieldGroup {
                                 visible: advancedExport && exportMode !== "lossless_trim"
                                 label: "Resolution"
-                                ComboBox {
+                                FlatCombo {
                                     id: resolutionBox
                                     Layout.fillWidth: true
                                     model: [
@@ -686,7 +792,7 @@ Page {
                             FieldGroup {
                                 visible: advancedExport && exportMode !== "lossless_trim"
                                 label: "Frame rate"
-                                ComboBox {
+                                FlatCombo {
                                     id: fpsBox
                                     Layout.fillWidth: true
                                     model: [24, 30, 48, 60]
@@ -699,12 +805,39 @@ Page {
                                 visible: advancedExport && exportMode !== "lossless_trim"
                                 label: "Quality"
                                 Slider {
+                                    id: qualitySlider
                                     Layout.fillWidth: true
                                     from: 30
                                     to: 100
                                     stepSize: 5
                                     value: quality
                                     onMoved: quality = Math.round(value)
+                                    background: Rectangle {
+                                        x: qualitySlider.leftPadding
+                                        y: qualitySlider.topPadding + qualitySlider.availableHeight / 2 - height / 2
+                                        implicitWidth: 200
+                                        implicitHeight: 4
+                                        width: qualitySlider.availableWidth
+                                        height: implicitHeight
+                                        radius: 0
+                                        color: root.border
+                                        Rectangle {
+                                            width: qualitySlider.visualPosition * parent.width
+                                            height: parent.height
+                                            color: root.accent
+                                            radius: 0
+                                        }
+                                    }
+                                    handle: Rectangle {
+                                        x: qualitySlider.leftPadding + qualitySlider.visualPosition * (qualitySlider.availableWidth - width)
+                                        y: qualitySlider.topPadding + qualitySlider.availableHeight / 2 - height / 2
+                                        implicitWidth: 12
+                                        implicitHeight: 12
+                                        radius: 0
+                                        color: qualitySlider.pressed ? root.accentStrong : (qualitySlider.hovered ? root.accentHover : root.textPrimary)
+                                        border.color: root.textPrimary
+                                        border.width: 1
+                                    }
                                 }
                                 Text { text: quality + "%"; color: root.textPrimary; font: root.smallFont }
                             }
@@ -713,7 +846,8 @@ Page {
                                 visible: advancedExport && exportMode !== "lossless_trim"
                                 Layout.fillWidth: true
                                 spacing: 8
-                                Switch {
+                                AppToggle {
+                                    theme: root.uiTheme
                                     checked: fitToSize
                                     onToggled: fitToSize = checked
                                 }
@@ -737,19 +871,29 @@ Page {
                                 enabled: fitToSize
                                 opacity: fitToSize ? 1 : 0.55
                                 SpinBox {
+                                    id: sizeSpinBox
                                     Layout.fillWidth: true
                                     from: 3
                                     to: 200
                                     value: targetSizeMb
                                     editable: true
                                     onValueModified: targetSizeMb = value
+                                    background: GlassPanel {
+                                        theme: root.uiTheme
+                                        tone: "raised"
+                                        radius: 0
+                                        sheenOpacity: 0
+                                        depth: 0
+                                        border.color: sizeSpinBox.activeFocus ? root.accent : root.border
+                                        color: theme ? Qt.rgba(theme.surfaceAlt.r, theme.surfaceAlt.g, theme.surfaceAlt.b, 0.42) : "rgba(13, 21, 39, 0.42)"
+                                    }
                                 }
                             }
 
                             FieldGroup {
                                 visible: advancedExport && exportMode !== "lossless_trim"
                                 label: "Audio bitrate"
-                                ComboBox {
+                                FlatCombo {
                                     Layout.fillWidth: true
                                     model: [96, 128, 160, 192]
                                     currentIndex: Math.max(0, model.indexOf(audioBitrateKbps))
@@ -761,12 +905,15 @@ Page {
                                 Layout.fillWidth: true
                                 theme: root.uiTheme
                                 tone: "raised"
-                                implicitHeight: 94
+                                radius: 0
+                                sheenOpacity: 0
+                                depth: 0
+                                implicitHeight: 84
 
                                 ColumnLayout {
                                     anchors.fill: parent
-                                    anchors.margins: 12
-                                    spacing: 4
+                                    anchors.margins: 10
+                                    spacing: 3
                                     Text { text: "Export summary"; color: root.textMuted; font: root.smallFont }
                                     Text { text: "Length: " + formatTime(trimEndSec - trimStartSec); color: root.textPrimary; font: root.bodyFont }
                                     Text { text: exportSummaryText(); color: root.textSecondary; font: root.smallFont }
@@ -843,8 +990,11 @@ Page {
         id: exportStateCard
         theme: root.uiTheme
         tone: "raised"
+        radius: 0
+        sheenOpacity: 0
+        depth: 0
         border.color: page.exportStatusAccent()
-        color: Qt.rgba(0.05, 0.08, 0.08, 0.94)
+        color: theme ? Qt.rgba(theme.surfaceAlt.r, theme.surfaceAlt.g, theme.surfaceAlt.b, 0.42) : "rgba(13, 21, 39, 0.42)"
         implicitHeight: contentColumn.implicitHeight + 24
 
         ColumnLayout {
@@ -860,7 +1010,7 @@ Page {
                 Rectangle {
                     Layout.preferredWidth: 10
                     Layout.preferredHeight: 10
-                    radius: 5
+                    radius: 0
                     color: page.exportStatusAccent()
                     opacity: backend.exportBusy ? 0.88 : 1.0
 
@@ -897,11 +1047,28 @@ Page {
             }
 
             ProgressBar {
+                id: exportProgress
                 Layout.fillWidth: true
                 from: 0
                 to: 1
                 value: page.exportSucceeded ? 1 : (backend.exportBusy ? backend.exportProgress : 0)
                 visible: backend.exportBusy || page.exportSucceeded
+                background: Rectangle {
+                    implicitWidth: 200
+                    implicitHeight: 4
+                    color: root.border
+                    radius: 0
+                }
+                contentItem: Item {
+                    implicitWidth: 200
+                    implicitHeight: 4
+                    Rectangle {
+                        width: exportProgress.visualPosition * parent.width
+                        height: parent.height
+                        color: root.successGreen
+                        radius: 0
+                    }
+                }
             }
 
             RowLayout {
@@ -938,12 +1105,15 @@ Page {
         property int activeStep: 0
         theme: root.uiTheme
         tone: "raised"
-        Layout.preferredHeight: 48
+        radius: 0
+        sheenOpacity: 0
+        depth: 0
+        Layout.preferredHeight: 42
 
         RowLayout {
             anchors.fill: parent
-            anchors.leftMargin: 14
-            anchors.rightMargin: 14
+            anchors.leftMargin: 12
+            anchors.rightMargin: 12
             spacing: 8
 
             StepPill { label: "Trim"; selected: flowSteps.activeStep === 0; accentColor: root.warningYellow }
@@ -961,20 +1131,22 @@ Page {
         property color accentColor: root.accent
         theme: root.uiTheme
         tone: "surface"
-        Layout.preferredWidth: Math.max(82, stepLabel.implicitWidth + 34)
-        Layout.preferredHeight: 28
-        radius: 14
-        color: selected ? Qt.rgba(0.08, 0.13, 0.12, 0.96) : "transparent"
+        Layout.preferredWidth: Math.max(76, stepLabel.implicitWidth + 28)
+        Layout.preferredHeight: 24
+        radius: 0
+        sheenOpacity: 0
+        depth: 0
+        color: selected ? Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.12) : "transparent"
         border.color: selected ? accentColor : "transparent"
 
         RowLayout {
             anchors.centerIn: parent
-            spacing: 7
+            spacing: 6
 
             Rectangle {
-                Layout.preferredWidth: 8
-                Layout.preferredHeight: 8
-                radius: 4
+                Layout.preferredWidth: 7
+                Layout.preferredHeight: 7
+                radius: 0
                 color: stepPill.selected ? stepPill.accentColor : root.borderStrong
                 opacity: stepPill.selected ? 1.0 : 0.72
             }
@@ -983,7 +1155,7 @@ Page {
                 id: stepLabel
                 text: stepPill.label
                 color: stepPill.selected ? root.textPrimary : root.textSoft
-                font: Qt.font({ family: root.uiTheme.displayFamily, pixelSize: 12, weight: stepPill.selected ? Font.DemiBold : Font.Medium })
+                font: Qt.font({ family: root.uiTheme.displayFamily, pixelSize: 11, weight: stepPill.selected ? Font.DemiBold : Font.Medium })
             }
         }
     }
@@ -991,7 +1163,10 @@ Page {
     component FieldBackground: GlassPanel {
         theme: root.uiTheme
         tone: "raised"
-        color: root.panelRaised
+        radius: 0
+        sheenOpacity: 0
+        depth: 0
+        color: theme ? Qt.rgba(theme.surfaceAlt.r, theme.surfaceAlt.g, theme.surfaceAlt.b, 0.42) : "rgba(13, 21, 39, 0.42)"
     }
 
     component FieldGroup: ColumnLayout {
@@ -1006,15 +1181,17 @@ Page {
         property color accentColor: root.accent
         theme: root.uiTheme
         tone: "raised"
-        radius: 13
-        color: root.panelRaised
+        radius: 0
+        sheenOpacity: 0
+        depth: 0
+        color: theme ? Qt.rgba(theme.surfaceAlt.r, theme.surfaceAlt.g, theme.surfaceAlt.b, 0.42) : "rgba(13, 21, 39, 0.42)"
         implicitWidth: tagLabel.implicitWidth + 22
         implicitHeight: 26
 
         RowLayout {
             anchors.centerIn: parent
             spacing: 6
-            Rectangle { width: 6; height: 6; radius: 3; color: parent.parent.accentColor }
+            Rectangle { width: 6; height: 6; radius: 0; color: parent.parent.accentColor }
             Text { id: tagLabel; text: parent.parent.text; color: root.textSecondary; font: root.smallFont }
         }
     }
@@ -1033,17 +1210,21 @@ Page {
         background: GlassPanel {
             theme: root.uiTheme
             tone: "raised"
-            radius: 8
+            radius: 0
+            sheenOpacity: 0
+            depth: 0
             color: !editorButton.enabled
-                ? Qt.rgba(0.03, 0.05, 0.08, 0.72)
+                ? Qt.rgba(0.04, 0.06, 0.10, 0.35)
                 : editorButton.primary
-                    ? (editorButton.hovered ? Qt.rgba(0.16, 0.18, 0.10, 0.98) : Qt.rgba(0.13, 0.15, 0.09, 0.94))
-                    : (editorButton.hovered ? root.hoverBg : root.panelRaised)
-            border.color: editorButton.activeFocus
+                    ? (editorButton.down ? Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.22) : editorButton.hovered ? Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.15) : Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.08))
+                    : (editorButton.down ? (theme ? theme.pressed : "#213054") : editorButton.hovered ? (theme ? theme.hover : "#17223D") : (theme ? theme.surfaceRaised : "#111A30"))
+            border.color: !editorButton.enabled
+                ? (theme ? theme.border : "#1B2A4A")
+                : editorButton.activeFocus
                 ? root.accent
                 : editorButton.primary
-                    ? root.warningYellow
-                    : (editorButton.enabled ? (editorButton.hovered ? root.glassLine : root.border) : root.border)
+                    ? root.accent
+                    : (editorButton.hovered ? (theme ? theme.borderStrong : "#334E80") : (theme ? theme.border : "#1B2A4A"))
             border.width: editorButton.activeFocus ? 2 : 1
         }
         contentItem: RowLayout {
@@ -1054,9 +1235,9 @@ Page {
                 source: editorButton.iconSource
                 Layout.preferredWidth: 15
                 Layout.preferredHeight: 15
-                tint: editorButton.primary ? root.warningYellow : (editorButton.hovered ? root.controlAccent(editorButton.iconSource, false) : root.textSecondary)
-                glowColor: editorButton.primary ? root.warningYellow : "transparent"
-                glowStrength: editorButton.primary ? 0.08 : 0.0
+                tint: editorButton.primary ? root.textPrimary : (editorButton.hovered ? root.controlAccent(editorButton.iconSource, false) : root.textSecondary)
+                glowColor: "transparent"
+                glowStrength: 0.0
                 iconOpacity: editorButton.enabled ? 0.82 : 0.32
             }
             Text {
@@ -1071,5 +1252,63 @@ Page {
         }
         Accessible.role: Accessible.Button
         Accessible.name: editorButton.text
+    }
+ 
+    component FlatCombo: ComboBox {
+        id: combo
+        Layout.preferredHeight: 36
+        font: root.smallFont
+ 
+        background: GlassPanel {
+            theme: root.uiTheme
+            tone: "raised"
+            radius: 0
+            sheenOpacity: 0
+            depth: 0
+            border.color: combo.activeFocus ? root.accent : root.border
+            color: theme ? Qt.rgba(theme.surfaceAlt.r, theme.surfaceAlt.g, theme.surfaceAlt.b, 0.42) : "rgba(13, 21, 39, 0.42)"
+        }
+ 
+        contentItem: Text {
+            text: combo.displayText
+            color: root.textSecondary
+            font: combo.font
+            verticalAlignment: Text.AlignVCenter
+            leftPadding: 10
+            rightPadding: 22
+            elide: Text.ElideRight
+        }
+ 
+        delegate: ItemDelegate {
+            width: combo.width
+            contentItem: Text {
+                text: combo.textRole ? modelData[combo.textRole] : modelData
+                color: root.textPrimary
+                font: root.bodyFont
+                verticalAlignment: Text.AlignVCenter
+            }
+            background: Rectangle { color: highlighted ? root.hoverBg : "transparent"; radius: 0 }
+        }
+ 
+        popup: Popup {
+            y: combo.height + 4
+            width: combo.width
+            padding: 4
+            background: GlassPanel {
+                theme: root.uiTheme
+                tone: "raised"
+                radius: 0
+                sheenOpacity: 0
+                depth: 0
+                border.color: root.borderStrong
+            }
+            contentItem: ListView {
+                implicitHeight: contentHeight
+                model: combo.delegateModel
+                currentIndex: combo.highlightedIndex
+                clip: true
+                ScrollBar.vertical: AppScrollBar { theme: root.uiTheme }
+            }
+        }
     }
 }

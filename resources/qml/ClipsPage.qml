@@ -18,14 +18,14 @@ Page {
     readonly property int listGameWidth: compactList ? 0 : 112
     readonly property int listSizeWidth: compactList ? 0 : 68
     readonly property int listDateWidth: compactList ? 0 : 126
-    readonly property int listActionsWidth: compactList ? 128 : 144
+    readonly property int listActionsWidth: compactList ? 96 : 144
     readonly property int scrollGutter: 20
     signal editClipRequested(var clip)
 
     RowLayout {
         anchors.fill: parent
-        anchors.margins: 16
-        spacing: 14
+        anchors.margins: 12
+        spacing: 10
 
         GlassPanel {
             theme: root.uiTheme
@@ -35,27 +35,32 @@ Page {
 
             ColumnLayout {
                 anchors.fill: parent
-                anchors.margins: 16
-                spacing: 14
+                anchors.margins: 14
+                spacing: 12
 
                 RowLayout {
                     Layout.fillWidth: true
-                    spacing: 10
+                    spacing: 8
 
                     ColumnLayout {
                         Layout.fillWidth: true
-                        spacing: 3
+                        Layout.minimumWidth: 0
+                        spacing: 2
 
                         Text {
                             text: "Clips"
                             color: root.textPrimary
                             font: root.headingFont
+                            elide: Text.ElideRight
+                            Layout.fillWidth: true
                         }
 
                         Text {
                             text: "Find saved moments, open the file, or make a shareable export."
                             color: root.textSoft
                             font: root.bodyFont
+                            elide: Text.ElideRight
+                            Layout.fillWidth: true
                         }
                     }
 
@@ -75,9 +80,9 @@ Page {
                     }
                 }
 
-                RowLayout {
+                ColumnLayout {
                     Layout.fillWidth: true
-                    spacing: 8
+                    spacing: 7
 
                     SearchField {
                         id: searchField
@@ -86,17 +91,23 @@ Page {
                         onTextChanged: applyFilter()
                     }
 
-                    FlatCombo {
-                        id: gameFilter
-                        Layout.preferredWidth: 178
-                        model: getGameFilters()
-                        onCurrentIndexChanged: applyFilter()
-                    }
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 7
 
-                    SegmentedButton { active: !page.gridMode; iconPath: root.iconList; text: "List"; tooltip: "Show clips as a list"; onClicked: page.gridMode = false }
-                    SegmentedButton { active: page.gridMode; iconPath: root.iconGrid; text: "Grid"; tooltip: "Show clips as a grid"; onClicked: page.gridMode = true }
-                    ToolAction { iconPath: root.iconRefresh; text: "Refresh"; onClicked: backend.requestRefresh() }
-                    ToolAction { iconPath: root.iconFolder; text: "Folder"; onClicked: backend.openOutputDir() }
+                        FlatCombo {
+                            id: gameFilter
+                            Layout.fillWidth: page.width < 900
+                            Layout.preferredWidth: page.width >= 900 ? 178 : -1
+                            model: getGameFilters()
+                            onCurrentIndexChanged: applyFilter()
+                        }
+
+                        SegmentedButton { active: !page.gridMode; iconPath: root.iconList; text: "List"; tooltip: "Show clips as a list"; onClicked: page.gridMode = false }
+                        SegmentedButton { active: page.gridMode; iconPath: root.iconGrid; text: "Grid"; tooltip: "Show clips as a grid"; onClicked: page.gridMode = true }
+                        ToolAction { iconPath: root.iconRefresh; text: "Refresh"; onClicked: backend.requestRefresh() }
+                        ToolAction { iconPath: root.iconFolder; text: "Folder"; onClicked: backend.openOutputDir() }
+                    }
                 }
 
                 GlassPanel {
@@ -120,15 +131,15 @@ Page {
                                 theme: root.uiTheme
                                 tone: "raised"
                                 width: Math.max(0, clipList.width - page.scrollGutter)
-                                height: 38
+                                height: 34
                                 radius: 0
                                 border.color: root.border
 
                                 RowLayout {
                                     anchors.fill: parent
-                                    anchors.leftMargin: 12
-                                    anchors.rightMargin: 12
-                                    spacing: 10
+                                    anchors.leftMargin: 10
+                                    anchors.rightMargin: 10
+                                    spacing: 8
                                     HeaderText { text: "Clip"; Layout.fillWidth: true }
                                     HeaderText { text: "Length"; Layout.preferredWidth: page.listLengthWidth; Layout.minimumWidth: page.listLengthWidth; Layout.maximumWidth: page.listLengthWidth }
                                     HeaderText { text: "Game"; visible: !page.compactList; Layout.preferredWidth: page.listGameWidth; Layout.minimumWidth: page.listGameWidth; Layout.maximumWidth: page.listGameWidth }
@@ -144,29 +155,34 @@ Page {
                                 theme: root.uiTheme
                                 tone: "surface"
                                 width: Math.max(0, clipList.width - page.scrollGutter)
-                                height: 72
+                                height: 64
                                 radius: 0
-                                color: isSelected(modelData.path) ? Qt.rgba(0.055, 0.110, 0.095, 0.78) : (listMouse.containsMouse ? Qt.rgba(0.08, 0.12, 0.12, 0.78) : root.panel)
-                                border.color: isSelected(modelData.path) ? Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.34) : root.border
+                                color: isSelected(modelData.path) ? (theme ? Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.12) : "rgba(37, 99, 235, 0.12)") : (listMouse.containsMouse ? root.hoverBg : "transparent")
+                                border.color: isSelected(modelData.path) ? root.accent : root.border
+
+                                ToolTip.visible: listMouse.containsMouse && !!modelData
+                                ToolTip.text: modelData ? (modelData.name + "\n" + modelData.path) : ""
+                                ToolTip.delay: 800
 
                                 RowLayout {
                                     anchors.fill: parent
-                                    anchors.leftMargin: 12
-                                    anchors.rightMargin: 12
-                                    spacing: 10
+                                    anchors.leftMargin: 10
+                                    anchors.rightMargin: 10
+                                    spacing: 8
 
                                     AppThumbnail {
                                         theme: root.uiTheme
-                                        Layout.preferredWidth: 82
-                                        Layout.preferredHeight: 46
+                                        Layout.preferredWidth: 74
+                                        Layout.preferredHeight: 40
                                         clipPath: modelData.path
                                         fallbackText: "No preview"
+                                        hoverActive: listMouse.containsMouse
                                     }
 
                                     ColumnLayout {
                                         Layout.fillWidth: true
                                         Layout.minimumWidth: 140
-                                        spacing: 2
+                                        spacing: 1
 
                                         Text {
                                             text: modelData.name
@@ -195,7 +211,7 @@ Page {
                                         Layout.minimumWidth: page.listActionsWidth
                                         Layout.maximumWidth: page.listActionsWidth
                                         spacing: 6
-                                        TinyAction { iconPath: root.iconEdit; text: "Share"; tooltip: "Trim and export this clip"; onClicked: { page.selectedClip = modelData; page.editClipRequested(modelData) } }
+                                        TinyAction { compact: page.compactList; iconPath: root.iconExport; text: page.compactList ? "" : "Export"; tooltip: "Trim and export this clip"; onClicked: { page.selectedClip = modelData; page.editClipRequested(modelData) } }
                                         TinyAction { compact: true; iconPath: root.iconOpen; text: ""; tooltip: "More clip actions"; onClicked: { page.selectedClip = modelData; let p = mapToItem(page, width, height); page.openClipContext(modelData, p.x, p.y) } }
                                     }
                                 }
@@ -214,8 +230,10 @@ Page {
                                         }
                                     }
                                     onDoubleClicked: function(mouse) {
-                                        if (mouse.button === Qt.LeftButton)
-                                            backend.openClip(modelData.path)
+                                        if (mouse.button === Qt.LeftButton) {
+                                            page.selectedClip = modelData;
+                                            page.editClipRequested(modelData);
+                                        }
                                     }
                                 }
                             }
@@ -242,7 +260,7 @@ Page {
                             clip: true
                             model: filteredModel
                             cellWidth: Math.floor(usableWidth / columnCount)
-                            cellHeight: 190
+                            cellHeight: 178
                             boundsBehavior: Flickable.StopAtBounds
 
                             delegate: GlassPanel {
@@ -252,20 +270,21 @@ Page {
                                 tone: "surface"
                                 width: clipGrid.cardWidth
                                 height: clipGrid.cellHeight - 12
-                                color: isSelected(modelData.path) ? Qt.rgba(0.055, 0.110, 0.095, 0.78) : (gridMouse.containsMouse ? Qt.rgba(0.08, 0.12, 0.12, 0.80) : root.panel)
-                                border.color: isSelected(modelData.path) ? Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.34) : root.border
+                                color: isSelected(modelData.path) ? (theme ? Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.12) : "rgba(37, 99, 235, 0.12)") : (gridMouse.containsMouse ? root.hoverBg : "transparent")
+                                border.color: isSelected(modelData.path) ? root.accent : root.border
 
                                 AppThumbnail {
                                     theme: root.uiTheme
                                     anchors { left: parent.left; right: parent.right; top: parent.top }
-                                    height: Math.min(124, Math.max(108, parent.width * 0.48))
+                                    height: Math.min(116, Math.max(100, parent.width * 0.46))
                                     radius: 0
                                     clipPath: modelData.path
                                     fallbackText: "No preview"
+                                    hoverActive: gridMouse.containsMouse
                                 }
 
                                 ColumnLayout {
-                                    anchors { left: parent.left; right: parent.right; bottom: parent.bottom; margins: 12 }
+                                    anchors { left: parent.left; right: parent.right; bottom: parent.bottom; margins: 10 }
                                     spacing: 3
 
                                     Text { text: modelData.name; color: root.textPrimary; font: root.bodyFont; elide: Text.ElideRight; Layout.fillWidth: true }
@@ -274,10 +293,11 @@ Page {
                                 }
 
                                 RowLayout {
-                                    visible: gridMouse.containsMouse || isSelected(modelData.path)
+                                    opacity: gridMouse.containsMouse || isSelected(modelData.path) ? 1.0 : 0.0
+                                    Behavior on opacity { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
                                     anchors { top: parent.top; right: parent.right; topMargin: 10; rightMargin: 10 }
                                     spacing: 6
-                                    TinyAction { iconPath: root.iconEdit; text: "Share"; tooltip: "Trim and export"; onClicked: { page.selectedClip = modelData; page.editClipRequested(modelData) } }
+                                    TinyAction { iconPath: root.iconExport; text: "Export"; tooltip: "Trim and export"; onClicked: { page.selectedClip = modelData; page.editClipRequested(modelData) } }
                                     TinyAction { compact: true; iconPath: root.iconOpen; text: ""; tooltip: "More actions"; onClicked: { page.selectedClip = modelData; let p = mapToItem(page, width, height); page.openClipContext(modelData, p.x, p.y) } }
                                 }
 
@@ -295,8 +315,10 @@ Page {
                                         }
                                     }
                                     onDoubleClicked: function(mouse) {
-                                        if (mouse.button === Qt.LeftButton)
-                                            backend.openClip(modelData.path)
+                                        if (mouse.button === Qt.LeftButton) {
+                                            page.selectedClip = modelData;
+                                            page.editClipRequested(modelData);
+                                        }
                                     }
                                 }
                             }
@@ -328,8 +350,8 @@ Page {
 
             ColumnLayout {
                 anchors.fill: parent
-                anchors.margins: 16
-                spacing: 12
+                anchors.margins: 14
+                spacing: 10
 
                 Text { text: "Selection"; color: root.textPrimary; font: root.titleFont }
                 Text { text: selectedClip ? "Clip details and actions" : "Choose a clip to inspect it."; color: root.textSoft; font: root.smallFont }
@@ -338,7 +360,7 @@ Page {
                     theme: root.uiTheme
                     tone: "alt"
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 178
+                    Layout.preferredHeight: 156
 
                     AppThumbnail {
                         theme: root.uiTheme
@@ -374,8 +396,8 @@ Page {
                 ColumnLayout {
                     visible: !!selectedClip
                     Layout.fillWidth: true
-                    spacing: 8
-                    ToolAction { wide: true; iconPath: root.iconEdit; text: "Share clip"; onClicked: if (selectedClip) page.editClipRequested(selectedClip) }
+                    spacing: 7
+                    ToolAction { wide: true; iconPath: root.iconExport; text: "Export clip"; onClicked: if (selectedClip) page.editClipRequested(selectedClip) }
                     ToolAction { wide: true; iconPath: root.iconOpen; text: "Open clip"; onClicked: if (selectedClip) backend.openClip(selectedClip.path) }
                     ToolAction { wide: true; iconPath: root.iconReveal; text: "Show in folder"; onClicked: if (selectedClip) backend.revealInExplorer(selectedClip.path) }
                     ToolAction { wide: true; iconPath: root.iconClipboard; text: "Copy clip"; onClicked: if (selectedClip) backend.copyClipToClipboard(selectedClip.path) }
@@ -395,7 +417,7 @@ Page {
         width: Math.min(page.width - 48, 460)
         x: Math.round((page.width - width) / 2)
         y: Math.round((page.height - height) / 2)
-        padding: 16
+        padding: 14
         onOpened: deleteCancel.forceActiveFocus()
         onClosed: {
             if (page.gridMode)
@@ -406,10 +428,11 @@ Page {
         background: GlassPanel {
             theme: root.uiTheme
             tone: "raised"
+            radius: 0
             border.color: root.recordRed
         }
         contentItem: ColumnLayout {
-            spacing: 12
+            spacing: 10
 
             RowLayout {
                 Layout.fillWidth: true
@@ -442,6 +465,7 @@ Page {
                 Layout.fillWidth: true
                 theme: root.uiTheme
                 tone: "alt"
+                radius: 0
                 implicitHeight: filePathText.implicitHeight + 24
 
                 Text {
@@ -491,12 +515,15 @@ Page {
         background: GlassPanel {
             theme: root.uiTheme
             tone: "raised"
+            radius: 0
+            sheenOpacity: 0
+            depth: 0
             border.color: root.borderStrong
         }
 
         ContextMenuItem {
-            menuIcon: root.iconEdit
-            text: "Trim and share"
+            menuIcon: root.iconExport
+            text: "Trim and export"
             enabled: !!page.contextClip
             onTriggered: if (page.contextClip) page.editClipRequested(page.contextClip)
         }
@@ -656,9 +683,12 @@ Page {
 
         theme: root.uiTheme
         tone: "raised"
-        Layout.preferredHeight: 38
+        radius: 0
+        sheenOpacity: 0
+        depth: 0
+        Layout.preferredHeight: 36
         border.color: field.activeFocus ? root.accent : root.border
-        color: root.panelRaised
+        color: theme ? Qt.rgba(theme.surfaceAlt.r, theme.surfaceAlt.g, theme.surfaceAlt.b, 0.42) : "rgba(13, 21, 39, 0.42)"
 
         RowLayout {
             anchors.fill: parent
@@ -692,14 +722,17 @@ Page {
 
     component FlatCombo: ComboBox {
         id: combo
-        Layout.preferredHeight: 38
+        Layout.preferredHeight: 36
         font: root.smallFont
 
         background: GlassPanel {
             theme: root.uiTheme
             tone: "raised"
+            radius: 0
+            sheenOpacity: 0
+            depth: 0
             border.color: combo.activeFocus ? root.accent : root.border
-            color: root.panelRaised
+            color: theme ? Qt.rgba(theme.surfaceAlt.r, theme.surfaceAlt.g, theme.surfaceAlt.b, 0.42) : "rgba(13, 21, 39, 0.42)"
         }
 
         contentItem: Text {
@@ -720,7 +753,7 @@ Page {
                 font: root.bodyFont
                 verticalAlignment: Text.AlignVCenter
             }
-            background: Rectangle { color: highlighted ? root.hoverBg : root.panelRaised }
+            background: Rectangle { color: highlighted ? root.hoverBg : "transparent"; radius: 0 }
         }
 
         popup: Popup {
@@ -730,6 +763,9 @@ Page {
             background: GlassPanel {
                 theme: root.uiTheme
                 tone: "raised"
+                radius: 0
+                sheenOpacity: 0
+                depth: 0
                 border.color: root.borderStrong
             }
             contentItem: ListView {
@@ -750,7 +786,7 @@ Page {
         accentColor: root.controlAccent(iconPath, false)
         primary: active
         Layout.preferredWidth: 62
-        Layout.preferredHeight: 38
+        Layout.preferredHeight: 36
     }
 
     component ToolAction: AppButton {
@@ -760,7 +796,7 @@ Page {
         iconSource: iconPath
         accentColor: root.controlAccent(iconPath, danger)
         Layout.preferredWidth: wide ? 286 : Math.max(72, implicitWidth)
-        Layout.preferredHeight: 38
+        Layout.preferredHeight: 36
     }
 
     component TinyAction: AppButton {
@@ -784,7 +820,7 @@ Page {
             source: backend.clipLibrary.length === 0 ? root.iconSave : root.iconSearch
             width: 24
             height: 24
-            tint: backend.clipLibrary.length === 0 ? root.accentGreen : root.accentBlue
+            tint: backend.clipLibrary.length === 0 ? root.accentGreen : root.textSecondary
             iconOpacity: 0.78
         }
 
@@ -842,6 +878,9 @@ Page {
 
         theme: root.uiTheme
         tone: "raised"
+        radius: 0
+        sheenOpacity: 0
+        depth: 0
         Layout.fillWidth: true
         implicitHeight: inspectorColumn.implicitHeight + 24
 
@@ -895,7 +934,7 @@ Page {
         }
 
         background: Rectangle {
-            radius: 8
+            radius: 0
             color: contextMenuItem.highlighted ? root.hoverBg : "transparent"
             border.color: contextMenuItem.highlighted ? root.border : "transparent"
             border.width: 1

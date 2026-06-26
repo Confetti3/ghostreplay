@@ -6,21 +6,21 @@ Rectangle {
 
     property QtObject theme
     property string text: ""
-    property color accentColor: theme ? theme.accent : "#4FA9FF"
+    property color accentColor: theme ? theme.accent : "#2563EB"
     property bool strong: false
 
     function tintedSurface(alphaBoost) {
         return Qt.rgba(
-            Math.min(1.0, chip.accentColor.r * 0.22 + 0.05),
-            Math.min(1.0, chip.accentColor.g * 0.18 + 0.06),
-            Math.min(1.0, chip.accentColor.b * 0.26 + 0.10),
+            chip.accentColor.r,
+            chip.accentColor.g,
+            chip.accentColor.b,
             alphaBoost
         )
     }
 
-    radius: height / 2
-    color: strong ? tintedSurface(0.92) : tintedSurface(0.72)
-    border.color: strong ? accentColor : (theme ? theme.border : "#243241")
+    radius: 0
+    color: strong ? tintedSurface(0.12) : tintedSurface(0.06)
+    border.color: strong ? accentColor : (theme ? theme.border : "#1B2A4A")
     border.width: 1
     implicitHeight: 26
     implicitWidth: label.implicitWidth + 28
@@ -35,7 +35,7 @@ Rectangle {
             id: statusDot
             Layout.preferredWidth: 7
             Layout.preferredHeight: 7
-            radius: 4
+            radius: 0
             color: chip.accentColor
             border.color: Qt.rgba(1.0, 1.0, 1.0, 0.18)
             border.width: 1
@@ -51,7 +51,7 @@ Rectangle {
         Text {
             id: label
             text: chip.text
-            color: chip.theme ? chip.theme.textPrimary : "#F5F8FD"
+            color: chip.theme ? chip.theme.textPrimary : "#E2E8F0"
             font: chip.theme ? chip.theme.smallFont : Qt.font({ pixelSize: 11 })
         }
     }

@@ -1,9 +1,38 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Ghost Replay">
-  <rect width="256" height="256" rx="56" fill="#0D0B12"/>
-  <rect x="26" y="26" width="204" height="204" rx="46" fill="#14111C" stroke="#2C2638" stroke-width="2"/>
-  <path d="M104 94c-5-8-15-13-28-13c-22 0-38 17-38 39s16 39 39 39c18 0 31-10 35-27H80"
-        fill="none" stroke="#FAF0E6" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M138 160V84h33c18 0 30 10 30 27c0 12-7 21-18 25l21 20"
-        fill="none" stroke="#B9B4C7" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M138 122h31" fill="none" stroke="#B9B4C7" stroke-width="14" stroke-linecap="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Ghost Replay Branded Logo">
+  <!-- Solid Near-Black Background -->
+  <rect width="256" height="256" fill="#050811"/>
+  
+  <defs>
+    <!-- The 6 Foreground Stencil Shapes -->
+    <g id="stencil-shapes">
+      <!-- Top-Left "C" -->
+      <path d="M48,48 H80 L96,64 H64 V80 H96 V96 H48 Z"/>
+      <!-- Top-Right "U" -->
+      <path d="M160,48 H208 V152 L192,136 V64 H176 V120 L160,104 Z"/>
+      <!-- Top-Center Trapezoid -->
+      <polygon points="88,48 152,48 152,96 136,96"/>
+      <!-- Bottom-Right "C" -->
+      <path d="M208,208 H176 L160,192 H192 V176 H160 V160 H208 Z"/>
+      <!-- Bottom-Left "U" -->
+      <path d="M96,208 H48 V104 L64,120 V192 H80 V136 L96,152 Z"/>
+      <!-- Bottom-Center Trapezoid -->
+      <polygon points="168,208 104,208 104,160 120,160"/>
+    </g>
+  </defs>
+
+  <!-- Center the entire optical mass (Offset by -4, -4) -->
+  <g transform="translate(-4, -4)">
+    
+    <!-- 1. GHOST SHADOW LAYER: Solid Electric Blue shifted down-right by (8, 8) -->
+    <g fill="#2563EB" transform="translate(8, 8)">
+      <use href="#stencil-shapes"/>
+    </g>
+    
+    <!-- Central Core Square (Anchored & Symmetric) -->
+    <rect x="108" y="108" width="40" height="40" fill="#2563EB"/>
+    
+    <!-- 2. FOREGROUND LAYER: Stark White shapes -->
+    <use href="#stencil-shapes" fill="#E2E8F0"/>
+    
+  </g>
 </svg>

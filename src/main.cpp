@@ -21,7 +21,9 @@
 #  include "ui/ClipPreviewController.h"
 #  include "ui/ThumbnailProvider.h"
 #  include "ui/WindowChromeController.h"
+#  include <QAbstractNativeEventFilter>
 #  include <QApplication>
+#  include <QGuiApplication>
 #  include <QIcon>
 #  include <QQmlApplicationEngine>
 #  include <QQmlContext>
@@ -32,6 +34,8 @@
 #  include <QTimer>
 #  include <QWindow>
 #  include <QtGlobal>
+#  include <QLocalServer>
+#  include <QLocalSocket>
 #  include <algorithm>
 #  include <cstring>
 #  include <iostream>
@@ -85,7 +89,7 @@ std::string lowerAscii(std::string value)
 }
 
 #ifdef HAS_QT6
-void fitWindowToAvailableScreen(QWindow* window, QApplication& app)
+void fitWindowToAvailableScreen(QWindow* window, QApplication& app, bool recenter)
 {
     if (!window)
         return;
@@ -97,16 +101,205 @@ void fitWindowToAvailableScreen(QWindow* window, QApplication& app)
         return;
 
     const QRect available = screen->availableGeometry();
+    if (!available.isValid())
+        return;
+
+    const int min_width = std::min(860, std::max(640, available.width()));
+    const int min_height = std::min(600, std::max(520, available.height()));
+    window->setMinimumSize(QSize(min_width, min_height));
+
+    if ((window->windowStates() & Qt::WindowMaximized) || window->visibility() == QWindow::Maximized)
+        return;
+
     const int desired_width = 1268;
     const int desired_height = 720;
-    const int width = std::min(desired_width, available.width());
-    const int height = std::min(desired_height, available.height());
-    const int x = available.x() + std::max(0, (available.width() - width) / 2);
-    const int y = available.y() + std::max(0, (available.height() - height) / 2);
+    const int current_width = window->width() > 0 ? window->width() : desired_width;
+    const int current_height = window->height() > 0 ? window->height() : desired_height;
+    const int width = std::min(std::max(min_width, current_width), available.width());
+    const int height = std::min(std::max(min_height, current_height), available.height());
 
-    window->resize(width, height);
-    window->setPosition(x, y);
+    QRect nextGeometry(window->position(), QSize(width, height));
+    if (recenter || !available.contains(nextGeometry))
+    {
+        const int x = available.x() + std::max(0, (available.width() - width) / 2);
+        const int y = available.y() + std::max(0, (available.height() - height) / 2);
+        nextGeometry.moveTopLeft(QPoint(x, y));
+    }
+
+    if (window->size() != nextGeometry.size())
+        window->resize(nextGeometry.size());
+    if (window->position() != nextGeometry.topLeft())
+        window->setPosition(nextGeometry.topLeft());
 }
+
+void wireWindowScreenClamping(QWindow* window, QApplication& app)
+{
+    if (!window)
+        return;
+
+    auto clampLater = [window, &app](bool recenter)
+    {
+        QTimer::singleShot(0, window, [window, &app, recenter]()
+        {
+            fitWindowToAvailableScreen(window, app, recenter);
+        });
+    };
+
+    QObject::connect(window, &QWindow::screenChanged, window,
+        [window, &app, clampLater](QScreen* screen)
+        {
+            if (screen)
+            {
+                QObject::connect(screen, &QScreen::availableGeometryChanged, window,
+                    [clampLater]() { clampLater(false); }, Qt::UniqueConnection);
+                QObject::connect(screen, &QScreen::geometryChanged, window,
+                    [clampLater]() { clampLater(false); }, Qt::UniqueConnection);
+                QObject::connect(screen, &QScreen::logicalDotsPerInchChanged, window,
+                    [clampLater]() { clampLater(false); }, Qt::UniqueConnection);
+            }
+            clampLater(false);
+        });
+
+    QObject::connect(&app, &QGuiApplication::screenAdded, window,
+        [clampLater](QScreen*) { clampLater(false); });
+    QObject::connect(&app, &QGuiApplication::screenRemoved, window,
+        [clampLater](QScreen*) { clampLater(true); });
+
+    if (QScreen* screen = window->screen())
+    {
+        QObject::connect(screen, &QScreen::availableGeometryChanged, window,
+            [clampLater]() { clampLater(false); }, Qt::UniqueConnection);
+        QObject::connect(screen, &QScreen::geometryChanged, window,
+            [clampLater]() { clampLater(false); }, Qt::UniqueConnection);
+        QObject::connect(screen, &QScreen::logicalDotsPerInchChanged, window,
+            [clampLater]() { clampLater(false); }, Qt::UniqueConnection);
+    }
+}
+
+class ShellDpiEventFilter final : public QAbstractNativeEventFilter
+{
+public:
+    ShellDpiEventFilter(QWindow* window, QApplication& app)
+        : m_window(window)
+        , m_app(app)
+    {
+    }
+
+    bool nativeEventFilter(const QByteArray& eventType, void* message, qintptr* result) override
+    {
+        Q_UNUSED(result);
+
+#ifdef Q_OS_WIN
+        if (eventType != "windows_generic_MSG" && eventType != "windows_dispatcher_MSG")
+            return false;
+
+        const MSG* msg = static_cast<MSG*>(message);
+        if (!msg || !m_window)
+            return false;
+
+        const HWND hwnd = reinterpret_cast<HWND>(m_window->winId());
+        if (!hwnd || msg->hwnd != hwnd)
+            return false;
+
+        switch (msg->message)
+        {
+        case WM_DPICHANGED:
+            preserveWindowMetrics();
+            scheduleClamp(false);
+            break;
+        case WM_DISPLAYCHANGE:
+        case WM_SETTINGCHANGE:
+            preserveWindowMetrics();
+            scheduleClamp(false);
+            break;
+        default:
+            break;
+        }
+#else
+        Q_UNUSED(eventType);
+        Q_UNUSED(message);
+#endif
+
+        return false;
+    }
+
+private:
+    double currentWindowScale() const
+    {
+        QScreen* screen = m_window ? m_window->screen() : nullptr;
+        if (!screen)
+            screen = m_app.primaryScreen();
+        if (!screen)
+            return 1.0;
+
+        const qreal dpi = screen->logicalDotsPerInch();
+        if (dpi <= 0.0)
+            return 1.0;
+
+        return std::max(0.5, static_cast<double>(dpi / 96.0));
+    }
+
+    bool isWindowMaximized() const
+    {
+        return m_window
+            && (((m_window->windowStates() & Qt::WindowMaximized) != 0)
+                || m_window->visibility() == QWindow::Maximized);
+    }
+
+    void preserveWindowMetrics()
+    {
+        if (!m_window || m_restorePending || isWindowMaximized())
+            return;
+
+        const QSize currentSize = m_window->size();
+        if (!currentSize.isValid() || currentSize.isEmpty())
+            return;
+
+        m_preservedLogicalSize = currentSize;
+        m_preservedScale = currentWindowScale();
+        m_restorePending = true;
+    }
+
+    void normalizeWindowAfterDpiChange(bool recenter, bool finalize)
+    {
+        if (!m_window)
+            return;
+
+        if (m_restorePending && !isWindowMaximized() && m_preservedLogicalSize.isValid())
+        {
+            const QSize targetLogicalSize = m_preservedLogicalSize;
+
+            if (m_window->size() != targetLogicalSize)
+                m_window->resize(targetLogicalSize);
+        }
+
+        fitWindowToAvailableScreen(m_window, m_app, recenter);
+
+        if (finalize)
+            m_restorePending = false;
+    }
+
+    void scheduleClamp(bool recenter)
+    {
+        if (!m_window)
+            return;
+
+        QTimer::singleShot(0, m_window, [this, recenter]()
+        {
+            normalizeWindowAfterDpiChange(recenter, false);
+        });
+        QTimer::singleShot(150, m_window, [this, recenter]()
+        {
+            normalizeWindowAfterDpiChange(recenter, true);
+        });
+    }
+
+    QWindow* m_window = nullptr;
+    QApplication& m_app;
+    QSize m_preservedLogicalSize;
+    double m_preservedScale = 1.0;
+    bool m_restorePending = false;
+};
 
 #ifdef Q_OS_WIN
 void applyWindowsRoundedCorners(QWindow* window)
@@ -180,6 +373,8 @@ int main(int argc, char* argv[])
 #ifdef HAS_QT6
     // ── Qt QML system-tray path ──────────────────────────
 
+    QGuiApplication::setHighDpiScaleFactorRoundingPolicy(
+        Qt::HighDpiScaleFactorRoundingPolicy::PassThrough);
     QQuickStyle::setStyle("Basic");
     QQuickWindow::setDefaultAlphaBuffer(true);
     QApplication qapp(argc, argv);
@@ -188,8 +383,27 @@ int main(int argc, char* argv[])
 #ifdef GHOST_REPLAY_VERSION
     QApplication::setApplicationVersion(QStringLiteral(GHOST_REPLAY_VERSION));
 #endif
-    QApplication::setWindowIcon(QIcon(":/branding/ghost-loop.png"));
+    QApplication::setWindowIcon(QIcon(":/icons/ghostreplay.svg"));
     QApplication::setQuitOnLastWindowClosed(false);
+    
+    // ── Single Instance Check ────────────────────────────
+    const QString serverName = QStringLiteral("GhostReplaySingleInstanceSocket");
+    QLocalSocket socket;
+    socket.connectToServer(serverName);
+    if (socket.waitForConnected(500))
+    {
+        socket.write("show");
+        socket.waitForBytesWritten(500);
+        return 0; // Exit this instance
+    }
+
+    // Host the server in this first instance
+    QLocalServer::removeServer(serverName);
+    QLocalServer* singleInstanceServer = new QLocalServer(&qapp);
+    if (!singleInstanceServer->listen(serverName))
+    {
+        LOG_WARNING("main: Single instance socket server failed to listen: " + singleInstanceServer->errorString().toStdString());
+    }
 
     // ── Create Backend before pipeline ───────────────────
     Backend* backend = new Backend(); // owned manually, deleted on exit
@@ -218,6 +432,7 @@ int main(int argc, char* argv[])
         return 1;
     }
 
+    std::unique_ptr<ShellDpiEventFilter> shellDpiFilter;
     QWindow* mainWindow = qobject_cast<QWindow*>(engine->rootObjects().constFirst());
     if (mainWindow)
     {
@@ -226,14 +441,49 @@ int main(int argc, char* argv[])
 #ifdef Q_OS_WIN
         applyWindowsRoundedCorners(mainWindow);
 #endif
-        fitWindowToAvailableScreen(mainWindow, qapp);
+        fitWindowToAvailableScreen(mainWindow, qapp, true);
+        wireWindowScreenClamping(mainWindow, qapp);
+        shellDpiFilter = std::make_unique<ShellDpiEventFilter>(mainWindow, qapp);
+        qapp.installNativeEventFilter(shellDpiFilter.get());
         windowChrome.setWindow(mainWindow);
         mainWindow->show();
-        fitWindowToAvailableScreen(mainWindow, qapp);
+        fitWindowToAvailableScreen(mainWindow, qapp, false);
         QTimer::singleShot(0, mainWindow, [mainWindow, &qapp]()
         {
-            fitWindowToAvailableScreen(mainWindow, qapp);
+            fitWindowToAvailableScreen(mainWindow, qapp, false);
         });
+
+        if (singleInstanceServer)
+        {
+            QObject::connect(singleInstanceServer, &QLocalServer::newConnection, [singleInstanceServer, mainWindow]()
+            {
+                QLocalSocket* client = singleInstanceServer->nextPendingConnection();
+                if (client)
+                {
+                    auto readAndProcess = [client, mainWindow]()
+                    {
+                        if (client->bytesAvailable() > 0)
+                        {
+                            QByteArray data = client->readAll();
+                            if (data == "show")
+                            {
+                                if (mainWindow->windowStates() & Qt::WindowMinimized)
+                                    mainWindow->showNormal();
+                                else
+                                    mainWindow->show();
+                                mainWindow->raise();
+                                mainWindow->requestActivate();
+                            }
+                            client->disconnectFromServer();
+                            client->deleteLater();
+                        }
+                    };
+                    QObject::connect(client, &QLocalSocket::readyRead, readAndProcess);
+                    QObject::connect(client, &QLocalSocket::disconnected, client, &QObject::deleteLater);
+                    readAndProcess();
+                }
+            });
+        }
     }
     
     QQmlEngine::setObjectOwnership(backend, QQmlEngine::CppOwnership);
@@ -263,6 +513,8 @@ int main(int argc, char* argv[])
     }
 
     int result = qapp.exec();
+    if (shellDpiFilter)
+        qapp.removeNativeEventFilter(shellDpiFilter.get());
     grapp.shutdown();
     engine.reset();
     delete backend;

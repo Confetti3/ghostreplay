@@ -1,5 +1,6 @@
 #include "ui/GRApplication.h"
 #include "ui/Backend.h"
+#include "ui/DisplayTopologyMonitor.h"
 #include "ui/SettingsWindow.h"
 #include "capture/CaptureManager.h"
 #include "buffer/RingBuffer.h"
@@ -33,6 +34,7 @@
 #include <QRegularExpression>
 #include <QSet>
 #include <QWindow>
+#include <cmath>
 #include <iostream>
 
 #ifdef Q_OS_WIN
@@ -41,7 +43,39 @@
 
 static QIcon appIcon()
 {
-    return QIcon(":/branding/ghost-loop.png");
+    return QIcon(":/icons/ghostreplay.svg");
+}
+
+namespace
+{
+QString displayResolutionText(const DisplaySnapshot& snapshot)
+{
+    if (!snapshot.valid || snapshot.pixelBounds.width() <= 0 || snapshot.pixelBounds.height() <= 0)
+        return QStringLiteral("Native");
+
+    return QStringLiteral("%1x%2")
+        .arg(snapshot.pixelBounds.width())
+        .arg(snapshot.pixelBounds.height());
+}
+
+QString displayScaleText(const DisplaySnapshot& snapshot)
+{
+    if (!snapshot.valid)
+        return QStringLiteral("100%");
+
+    return QStringLiteral("%1%").arg(qRound(snapshot.scale * 100.0));
+}
+
+QString displaySummaryText(const DisplaySnapshot& snapshot)
+{
+    return QStringLiteral("%1 / %2")
+        .arg(displayResolutionText(snapshot), displayScaleText(snapshot));
+}
+
+bool autoNativeCapture(const Config& config)
+{
+    return config.capture_width == 0 && config.capture_height == 0;
+}
 }
 
 // ── Constructor ────────────────────────────────────────────────
@@ -120,6 +154,117 @@ void GRApplication::updateHealthChecks()
     }
 }
 
+void GRApplication::initializeDisplayMonitoring()
+{
+    if (m_display_monitor)
+        return;
+
+    m_display_monitor = new DisplayTopologyMonitor(m_config.monitor_index, this);
+    connect(m_display_monitor, &DisplayTopologyMonitor::topologySettled,
+            this, &GRApplication::onDisplayTopologySettled);
+    const DisplaySnapshot snapshot = m_display_monitor->currentSnapshot();
+    updateBackendDisplayState(snapshot);
+}
+
+void GRApplication::updateBackendDisplayState(const DisplaySnapshot& snapshot)
+{
+    if (!m_backend)
+        return;
+
+    QString label = snapshot.valid ? snapshot.label : QStringLiteral("Display");
+    if (label.isEmpty())
+        label = QStringLiteral("Display");
+
+    QString resolution = displayResolutionText(snapshot);
+    if (resolution == QStringLiteral("Native") && m_capture_mgr && m_capture_mgr->width() > 0 && m_capture_mgr->height() > 0)
+    {
+        resolution = QStringLiteral("%1x%2")
+            .arg(m_capture_mgr->width())
+            .arg(m_capture_mgr->height());
+    }
+
+    m_backend->setDisplayState(label,
+                               resolution,
+                               displayScaleText(snapshot),
+                               autoNativeCapture(m_config));
+}
+
+void GRApplication::pauseCaptureAfterRestart()
+{
+    if (m_capture_mgr)
+        m_capture_mgr->stop();
+    if (m_audio_active && m_audio_cap)
+        m_audio_cap->stop();
+
+    m_recording = false;
+    if (m_action_toggle)
+        m_action_toggle->setText("Resume Recording");
+    if (m_backend)
+    {
+        m_backend->setRecording(false);
+        m_backend->setAudioActive(false);
+    }
+    updateTrayTooltip();
+}
+
+void GRApplication::restartCaptureAfterDisplayChange(const DisplaySnapshot& snapshot, const QString& reason)
+{
+    const bool should_resume_recording = m_recording;
+    const bool was_available = m_capture_available;
+
+    if (m_backend)
+        m_backend->reportInfo(QStringLiteral("Display changed. Applying %1.").arg(reason));
+
+    if (!startCapturePipeline(true))
+    {
+        if (m_backend)
+        {
+            m_backend->reportError(m_capture_error.isEmpty()
+                ? QStringLiteral("Display changed, but capture could not restart.")
+                : m_capture_error);
+        }
+        return;
+    }
+
+    if (!should_resume_recording)
+        pauseCaptureAfterRestart();
+
+    updateBackendDisplayState(snapshot);
+
+    if (m_backend)
+    {
+        m_backend->reportSuccess(QStringLiteral("Display changed. Capture restarted at %1.")
+            .arg(displaySummaryText(snapshot)));
+        if (was_available)
+            m_backend->reportInfo(QStringLiteral("Replay buffer reset after display change."));
+    }
+}
+
+void GRApplication::onDisplayTopologySettled()
+{
+    if (!m_display_monitor)
+        return;
+
+    const DisplaySnapshot previous = m_display_monitor->previousSnapshot();
+    DisplaySnapshot current = m_display_monitor->currentSnapshot();
+    const DisplayChangeDecision decision =
+        DisplayTopologyMonitor::compareSnapshots(previous, current, autoNativeCapture(m_config));
+
+    if (!decision.changed)
+    {
+        updateBackendDisplayState(current);
+        return;
+    }
+
+    updateBackendDisplayState(current);
+
+    if (!decision.shouldRestartCapture)
+        return;
+
+    restartCaptureAfterDisplayChange(current,
+        decision.reason.isEmpty() ? QStringLiteral("display settings") : decision.reason);
+}
+
 void GRApplication::setCaptureUnavailable(const QString& reason)
 {
     stopCapturePipeline();
@@ -190,7 +335,15 @@ bool GRApplication::startCapturePipeline(bool allowInteractiveWindowPicker)
         owner_window = reinterpret_cast<void*>(m_main_window->winId());
 #endif
 
-    if (!m_capture_mgr->initialize(m_config.monitor_index, *m_enc_cfg,
+    int target_monitor_index = m_config.monitor_index;
+    if (m_display_monitor)
+    {
+        const DisplaySnapshot snapshot = m_display_monitor->currentSnapshot();
+        if (snapshot.valid)
+            target_monitor_index = snapshot.resolvedMonitorIndex;
+    }
+
+    if (!m_capture_mgr->initialize(target_monitor_index, *m_enc_cfg,
                                    m_config.capture_source, owner_window,
                                    allowInteractiveWindowPicker))
     {
@@ -230,6 +383,8 @@ bool GRApplication::startCapturePipeline(bool allowInteractiveWindowPicker)
         m_backend->setAudioActive(m_audio_active);
         m_backend->setCaptureStatus(true, QString());
         m_backend->setCurrentGame(QString::fromStdString(m_capture_mgr->captureTargetName()));
+        if (m_display_monitor)
+            updateBackendDisplayState(m_display_monitor->currentSnapshot());
     }
 
     if (m_action_save)
@@ -290,6 +445,8 @@ void GRApplication::applySettings(bool captureRestartRequired)
     {
         updateHealthChecks();
         rebindHotkey();
+        if (m_display_monitor)
+            updateBackendDisplayState(m_display_monitor->currentSnapshot());
         if (m_backend)
             m_backend->reportSuccess("Settings saved. Changes are live.");
         return;
@@ -331,6 +488,9 @@ void GRApplication::applySettings(bool captureRestartRequired)
 
     if (m_backend)
         m_backend->reportSuccess("Settings saved. Capture changes are live.");
+
+    if (m_display_monitor)
+        updateBackendDisplayState(m_display_monitor->currentSnapshot());
 }
 
 bool GRApplication::initialize()
@@ -360,6 +520,7 @@ bool GRApplication::initialize()
     m_backend->setExportState(false, 0.0, QString());
     m_backend->setCaptureStatus(false, QString());
     refreshClipLibrary();
+    initializeDisplayMonitoring();
 
     createTrayIcon();
     QTimer::singleShot(0, this, [this]()

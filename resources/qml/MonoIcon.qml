@@ -5,7 +5,7 @@ Item {
     id: icon
 
     property alias source: sourceImage.source
-    property color tint: "#EAF3FF"
+    property color tint: "#E2E8F0"
     property real iconOpacity: enabled ? 0.90 : 0.34
     property color glowColor: "transparent"
     property real glowStrength: 0.0
@@ -17,26 +17,6 @@ Item {
 
     implicitWidth: 16
     implicitHeight: 16
-
-    Rectangle {
-        visible: icon.hasGlow
-        anchors.centerIn: parent
-        width: Math.max(parent.width, parent.height) * (icon.featured ? 1.85 : 1.45)
-        height: width
-        radius: width / 2
-        color: icon.glowColor
-        opacity: 0.045 + icon.glowStrength * (icon.featured ? 0.14 : 0.10)
-    }
-
-    Rectangle {
-        visible: icon.featured && icon.hasGlow
-        anchors.centerIn: parent
-        width: Math.max(parent.width, parent.height) * 1.25
-        height: width
-        radius: width / 2
-        color: icon.glowColor
-        opacity: 0.07 + icon.glowStrength * 0.08
-    }
 
     Image {
         id: sourceImage
@@ -50,37 +30,11 @@ Item {
     }
 
     MultiEffect {
-        x: 0
-        y: Math.max(1, icon.height * 0.07)
-        width: parent.width
-        height: parent.height
-        source: sourceImage
-        colorization: 1.0
-        colorizationColor: "#02060A"
-        brightness: -0.35
-        saturation: 0.0
-        opacity: icon.enabled ? (0.18 + icon.lift * 0.10) : 0.08
-    }
-
-    MultiEffect {
-        x: 0
-        y: -Math.max(0.5, icon.height * 0.025)
-        width: parent.width
-        height: parent.height
-        source: sourceImage
-        colorization: 1.0
-        colorizationColor: "#FFFFFF"
-        brightness: 0.10
-        saturation: 0.0
-        opacity: icon.enabled ? (icon.featured ? 0.16 : 0.08) : 0.03
-    }
-
-    MultiEffect {
         anchors.fill: parent
         source: sourceImage
         colorization: 1.0
         colorizationColor: icon.tint
-        brightness: icon.featured ? 0.10 : 0.05
+        brightness: 0.0
         saturation: 0.0
         opacity: icon.iconOpacity
     }

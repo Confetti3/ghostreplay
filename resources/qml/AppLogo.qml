@@ -5,7 +5,7 @@ Item {
 
     property QtObject theme
     property bool framed: true
-    property string source: "qrc:/branding/ghost-loop.png"
+    property string source: "qrc:/icons/ghostreplay.svg"
     property real imageMargin: framed ? 2 : 0
 
     implicitWidth: 28
@@ -16,8 +16,8 @@ Item {
         anchors.centerIn: parent
         width: parent.width + 8
         height: parent.height + 8
-        radius: width / 2
-        color: logo.theme ? logo.theme.accentBlue : "#4D95FF"
+        radius: 0
+        color: logo.theme ? logo.theme.accentBlue : "#2563EB"
         opacity: 0.12
     }
 
@@ -26,15 +26,15 @@ Item {
         theme: logo.theme
         tone: "chrome"
         visible: logo.framed
-        radius: logo.theme ? logo.theme.radiusSm : 8
-        border.color: logo.theme ? logo.theme.borderStrong : "#426181"
-        color: "#0F1722"
+        radius: 0
+        border.color: logo.theme ? logo.theme.borderStrong : "#334E80"
+        color: logo.theme ? logo.theme.chrome : "#070A13"
     }
 
     Rectangle {
         visible: logo.framed
         anchors.fill: parent
-        radius: logo.theme ? logo.theme.radiusSm : 8
+        radius: 0
         gradient: Gradient {
             GradientStop { position: 0.0; color: Qt.rgba(0.22, 0.43, 0.72, 0.22) }
             GradientStop { position: 0.28; color: Qt.rgba(0.10, 0.17, 0.28, 0.10) }
