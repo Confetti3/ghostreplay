@@ -26,6 +26,7 @@ Page {
     property int draftHotkeyVk: backend.hotkeyVk
     property string draftOutputDir: backend.outputDir
     property bool draftLaunchAtStartup: backend.launchAtStartup
+    property int draftMonitorIndex: backend.monitorIndex
     property string saveMessage: "Settings are up to date."
     property bool saveError: false
     property string hotkeyStatus: "Click the recorder, then press a modifier with a key."
@@ -33,31 +34,32 @@ Page {
 
     RowLayout {
         anchors.fill: parent
-        anchors.leftMargin: 16
-        anchors.rightMargin: 16
-        anchors.topMargin: 16
-        anchors.bottomMargin: 72
-        spacing: 14
+        anchors.leftMargin: root.narrowShell ? 8 : 16
+        anchors.rightMargin: root.narrowShell ? 8 : 16
+        anchors.topMargin: root.narrowShell ? 8 : 16
+        anchors.bottomMargin: root.narrowShell ? 64 : 72
+        spacing: root.narrowShell ? 8 : 14
 
         GlassPanel {
             theme: root.uiTheme
             tone: "rail"
-            Layout.preferredWidth: 240
+            Layout.preferredWidth: root.narrowShell ? 78 : 240
             Layout.fillHeight: true
 
             ColumnLayout {
                 anchors.fill: parent
-                anchors.margins: 14
+                anchors.margins: root.narrowShell ? 8 : 14
                 spacing: 10
 
                 ColumnLayout {
+                    visible: !root.narrowShell
                     Layout.fillWidth: true
                     spacing: 2
                     Text { text: "Settings"; color: root.textPrimary; font: root.headingFont }
                     Text { text: "Profile and output"; color: root.textSoft; font: root.smallFont; wrapMode: Text.Wrap; Layout.fillWidth: true }
                 }
 
-                Divider {}
+                Divider { visible: !root.narrowShell }
 
                 Repeater {
                     model: [
@@ -89,10 +91,10 @@ Page {
 
             StackLayout {
                 anchors.fill: parent
-                anchors.leftMargin: 20
-                anchors.rightMargin: 20
-                anchors.topMargin: 20
-                anchors.bottomMargin: 20
+                anchors.leftMargin: root.narrowShell ? 12 : 20
+                anchors.rightMargin: root.narrowShell ? 12 : 20
+                anchors.topMargin: root.narrowShell ? 12 : 20
+                anchors.bottomMargin: root.narrowShell ? 12 : 20
                 currentIndex: page.activeCategory
 
                 SettingsPane {
@@ -104,7 +106,7 @@ Page {
                         desc: "Window uses the Windows picker. Game captures the foreground game window without hooks."
                         restartsCapture: true
                         FlatCombo {
-                            Layout.preferredWidth: 220
+                            Layout.preferredWidth: root.narrowShell ? 160 : 220
                             model: ["Desktop", "Window", "Game"]
                             currentIndex: {
                                 if (page.draftCaptureSource === "window") return 1
@@ -115,6 +117,39 @@ Page {
                                 let values = ["desktop", "window", "game"]
                                 page.draftCaptureSource = values[currentIndex]
                                 page.pendingSettings = true
+                            }
+                        }
+                    }
+
+                    SettingRow {
+                        title: "Target display"
+                        desc: "Select the display to capture when capturing the Desktop."
+                        enabled: page.draftCaptureSource === "desktop"
+                        restartsCapture: true
+                        FlatCombo {
+                            Layout.preferredWidth: root.narrowShell ? 160 : 220
+                            model: {
+                                let list = backend.availableDisplays
+                                let names = []
+                                for (let i = 0; i < list.length; i++) {
+                                    names.push(list[i].label)
+                                }
+                                return names
+                            }
+                            currentIndex: {
+                                let list = backend.availableDisplays
+                                for (let i = 0; i < list.length; i++) {
+                                    if (list[i].index === page.draftMonitorIndex)
+                                        return i
+                                }
+                                return 0
+                            }
+                            onActivated: {
+                                let list = backend.availableDisplays
+                                if (currentIndex >= 0 && currentIndex < list.length) {
+                                    page.draftMonitorIndex = list[currentIndex].index
+                                    page.pendingSettings = true
+                                }
                             }
                         }
                     }
@@ -133,7 +168,7 @@ Page {
                         desc: "Auto chooses the best available encoder for the selected display."
                         restartsCapture: true
                         FlatCombo {
-                            Layout.preferredWidth: 220
+                            Layout.preferredWidth: root.narrowShell ? 160 : 220
                             model: ["Auto", "Nvidia NVENC", "AMD AMF", "Intel Quick Sync", "Windows compatibility"]
                             currentIndex: {
                                 let value = page.draftEncoderBackend
@@ -167,7 +202,7 @@ Page {
                         desc: "Lower presets favor quality. Higher presets favor speed."
                         restartsCapture: true
                         FlatCombo {
-                            Layout.preferredWidth: 180
+                            Layout.preferredWidth: root.narrowShell ? 140 : 180
                             model: ["1 - Slowest", "2", "3", "4 - Balanced", "5", "6", "7 - Fastest"]
                             currentIndex: page.draftCapturePreset - 1
                             onActivated: { page.draftCapturePreset = currentIndex + 1; page.pendingSettings = true }
@@ -176,13 +211,26 @@ Page {
 
                     SettingRow {
                         title: "Resolution"
-                        desc: "Use 0 x 0 to preserve the native desktop size."
+                        desc: "Auto native uses 0 x 0 and adapts to display resolution and DPI changes."
                         restartsCapture: true
                         RowLayout {
                             spacing: 6
                             NumberField { value: page.draftCaptureWidth; from: 0; to: 7680; onCommit: function(nextValue) { page.draftCaptureWidth = nextValue; page.pendingSettings = true } }
                             Text { text: "x"; color: root.textSoft; font: root.bodyFont }
                             NumberField { value: page.draftCaptureHeight; from: 0; to: 4320; onCommit: function(nextValue) { page.draftCaptureHeight = nextValue; page.pendingSettings = true } }
+                        }
+                    }
+
+                    SettingRow {
+                        title: "Display status"
+                        desc: backend.autoDisplayAdaptationEnabled
+                            ? "Auto native is active; capture follows resolution and DPI changes."
+                            : "Manual resolution is active; display changes keep your chosen output size."
+                        StaticField {
+                            Layout.fillWidth: true
+                            text: backend.captureDisplayLabel + "  " + backend.captureDisplayResolution + "  " + backend.captureDisplayScale
+                            font: root.smallFont
+                            accentColor: backend.autoDisplayAdaptationEnabled ? root.accentCyan : root.border
                         }
                     }
 
@@ -335,7 +383,7 @@ Page {
                         title: "Shortcut status"
                         desc: page.hotkeyStatus
                         StaticField {
-                            Layout.preferredWidth: 220
+                            Layout.fillWidth: true
                             text: page.shortcutLabel(page.draftHotkeyModifiers, page.draftHotkeyVk)
                             font: root.monoFont
                             accentColor: page.hotkeyStatusError ? root.recordRed : root.accent
@@ -366,7 +414,7 @@ Page {
                             spacing: 8
 
                             StaticField {
-                                Layout.preferredWidth: 340
+                                Layout.fillWidth: true
                                 text: page.draftOutputDir
                                 font: root.smallFont
                             }
@@ -482,6 +530,7 @@ Page {
         backend.hotkeyVk = draftHotkeyVk
         backend.outputDir = draftOutputDir
         backend.launchAtStartup = draftLaunchAtStartup
+        backend.monitorIndex = draftMonitorIndex
     }
 
     function syncDraftsFromBackend() {
@@ -502,6 +551,7 @@ Page {
         draftHotkeyVk = backend.hotkeyVk
         draftOutputDir = backend.outputDir
         draftLaunchAtStartup = backend.launchAtStartup
+        draftMonitorIndex = backend.monitorIndex
         hotkeyStatus = "Click the recorder, then press a modifier with a key."
         hotkeyStatusError = false
     }
@@ -600,7 +650,7 @@ Page {
 
             ColumnLayout {
                 id: contentColumn
-                width: Math.min(parent.width - 42, 1120)
+                width: Math.min(parent.width - 24, 1120)
                 spacing: 12
 
                 ColumnLayout {
@@ -622,11 +672,12 @@ Page {
 
         theme: root.uiTheme
         tone: "raised"
-        sheenOpacity: 0.82
-        depth: 0.94
+        radius: 0
+        sheenOpacity: 0
+        depth: 0
         opacity: enabled ? 1.0 : 0.45
         Layout.fillWidth: true
-        Layout.preferredHeight: 88
+        Layout.preferredHeight: root.narrowShell ? 80 : 88
 
         ColumnLayout {
             anchors.fill: parent
@@ -651,10 +702,11 @@ Page {
                 }
 
                 Item {
-                    Layout.preferredWidth: 148
-                    Layout.minimumWidth: 148
-                    Layout.maximumWidth: 148
+                    Layout.preferredWidth: root.narrowShell ? 0 : 148
+                    Layout.minimumWidth: root.narrowShell ? 0 : 148
+                    Layout.maximumWidth: root.narrowShell ? 0 : 148
                     Layout.fillHeight: true
+                    visible: !root.narrowShell
 
                     AppChip {
                         theme: root.uiTheme
@@ -669,8 +721,8 @@ Page {
                 RowLayout {
                     id: controlSlot
                     spacing: 6
-                    Layout.preferredWidth: 240
-                    Layout.minimumWidth: 180
+                    Layout.preferredWidth: root.narrowShell ? 180 : 240
+                    Layout.minimumWidth: root.narrowShell ? 120 : 180
                     Layout.maximumWidth: 240
                     Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
                 }
@@ -698,18 +750,38 @@ Page {
 
         theme: root.uiTheme
         tone: "raised"
+        radius: 0
+        sheenOpacity: 0
+        depth: 0
         activeFocusOnTab: true
         Layout.fillWidth: true
-        Layout.preferredHeight: 52
-        color: selected ? Qt.rgba(0.12, 0.19, 0.28, 0.96) : (categoryMouse.pressed ? root.pressedBg : (categoryMouse.containsMouse ? root.hoverBg : root.panelRaised))
-        border.color: activeFocus ? root.accent : (selected ? root.borderStrong : (categoryMouse.containsMouse ? root.border : root.border))
+        Layout.preferredHeight: root.narrowShell ? 46 : 52
+        color: selected ? (theme ? Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.12) : "rgba(37, 99, 235, 0.12)") : (categoryMouse.pressed ? root.pressedBg : (categoryMouse.containsMouse ? root.hoverBg : "transparent"))
+        border.color: activeFocus ? root.accent : (selected ? root.borderStrong : (categoryMouse.containsMouse ? root.border : "transparent"))
         border.width: activeFocus ? 2 : 1
+
+        Rectangle {
+            visible: selected
+            anchors.left: parent.left
+            anchors.leftMargin: 0
+            anchors.verticalCenter: parent.verticalCenter
+            width: 2
+            height: parent.height
+            radius: 0
+            color: root.accent
+        }
 
         RowLayout {
             anchors.fill: parent
-            anchors.leftMargin: 12
-            anchors.rightMargin: 10
-            spacing: 10
+            anchors.leftMargin: root.narrowShell ? 0 : (selected ? 24 : 12)
+            anchors.rightMargin: root.narrowShell ? 0 : 10
+            spacing: root.narrowShell ? 0 : 10
+            
+            Item {
+                visible: root.narrowShell
+                Layout.fillWidth: true
+            }
+
             MonoIcon {
                 source: categoryRow.icon
                 Layout.preferredWidth: 16
@@ -719,7 +791,13 @@ Page {
                 glowStrength: selected ? 0.12 : 0.0
                 iconOpacity: selected ? 0.96 : 0.72
             }
+
+            Item {
+                visible: root.narrowShell
+                Layout.fillWidth: true
+            }
             ColumnLayout {
+                visible: !root.narrowShell
                 Layout.fillWidth: true
                 spacing: 0
                 Text { text: categoryRow.title; color: selected ? root.textPrimary : root.textSecondary; font: root.bodyFont; elide: Text.ElideRight; Layout.fillWidth: true }
@@ -752,8 +830,11 @@ Page {
         background: GlassPanel {
             theme: root.uiTheme
             tone: "raised"
+            radius: 0
+            sheenOpacity: 0
+            depth: 0
             border.color: combo.activeFocus ? root.accent : root.border
-            color: root.panelRaised
+            color: theme ? Qt.rgba(theme.surfaceAlt.r, theme.surfaceAlt.g, theme.surfaceAlt.b, 0.42) : "rgba(13, 21, 39, 0.42)"
         }
 
         contentItem: Text {
@@ -769,7 +850,7 @@ Page {
         delegate: ItemDelegate {
             width: combo.width
             contentItem: Text { text: modelData; color: root.textPrimary; font: root.bodyFont; verticalAlignment: Text.AlignVCenter }
-            background: Rectangle { color: highlighted ? root.hoverBg : root.panelRaised }
+            background: Rectangle { color: highlighted ? root.hoverBg : "transparent"; radius: 0 }
         }
 
         popup: Popup {
@@ -779,6 +860,9 @@ Page {
             background: GlassPanel {
                 theme: root.uiTheme
                 tone: "raised"
+                radius: 0
+                sheenOpacity: 0
+                depth: 0
                 border.color: root.borderStrong
             }
             contentItem: ListView {
@@ -803,7 +887,7 @@ Page {
             return Math.max(from, Math.min(to, isNaN(parsed) ? from : parsed))
         }
 
-        Layout.preferredWidth: 80
+        Layout.preferredWidth: root.narrowShell ? 64 : 80
         Layout.preferredHeight: 36
         color: root.textPrimary
         font: root.bodyFont
@@ -820,8 +904,11 @@ Page {
         background: GlassPanel {
             theme: root.uiTheme
             tone: "raised"
+            radius: 0
+            sheenOpacity: 0
+            depth: 0
             border.color: numberField.activeFocus ? root.accent : root.border
-            color: root.panelRaised
+            color: theme ? Qt.rgba(theme.surfaceAlt.r, theme.surfaceAlt.g, theme.surfaceAlt.b, 0.42) : "rgba(13, 21, 39, 0.42)"
         }
         onEditingFinished: {
             commit(parsedTextValue())
@@ -840,6 +927,10 @@ Page {
 
         theme: root.uiTheme
         tone: "raised"
+        radius: 0
+        sheenOpacity: 0
+        depth: 0
+        color: theme ? Qt.rgba(theme.surfaceAlt.r, theme.surfaceAlt.g, theme.surfaceAlt.b, 0.42) : "rgba(13, 21, 39, 0.42)"
         Layout.preferredHeight: 36
         border.color: accentColor === root.border ? root.border : Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.74)
 
@@ -869,7 +960,7 @@ Page {
         primary: recording
         accentColor: recording ? root.accentPurple : root.accent
         tooltip: "Record save replay shortcut"
-        Layout.preferredWidth: 260
+        Layout.preferredWidth: root.narrowShell ? 160 : 260
         Layout.preferredHeight: 38
 
         onClicked: {

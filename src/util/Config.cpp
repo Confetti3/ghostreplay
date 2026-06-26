@@ -202,6 +202,11 @@ void Config::parseArgs(int argc, char* argv[])
             launch_at_startup = false;
             continue;
         }
+        if (arg == "--minimized" || arg == "--tray")
+        {
+            start_minimized = true;
+            continue;
+        }
 
         auto eq = arg.find('=');
         if (eq == std::string::npos) continue;
@@ -256,7 +261,7 @@ bool Config::setStartupEnabled(bool enable)
         {
             std::wstring command = L"\"";
             command.append(exe_path, exe_path + len);
-            command.append(L"\"");
+            command.append(L"\" --minimized");
             result = RegSetValueExW(hKey, VALUE_NAME, 0, REG_SZ,
                                     reinterpret_cast<const BYTE*>(command.c_str()),
                                     static_cast<DWORD>((command.size() + 1) * sizeof(wchar_t)));

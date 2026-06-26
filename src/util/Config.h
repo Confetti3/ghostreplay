@@ -50,6 +50,7 @@ public:
     // Output
     std::string output_dir = "clips";
     bool launch_at_startup = false;          // Register in Windows startup
+    bool start_minimized   = false;          // Launch minimized to tray (internal/command-line only)
 
     // Logging
     std::string log_file  = "ghostreplay.log";

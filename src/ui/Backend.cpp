@@ -1,4 +1,5 @@
 #include "ui/Backend.h"
+#include "ui/DisplayTopologyMonitor.h"
 #include "util/Config.h"
 #include "util/ReleaseHealth.h"
 
@@ -19,7 +20,8 @@ bool requiresCaptureRestart(const Config& previous, const Config& current)
         previous.audio.enabled != current.audio.enabled ||
         previous.audio.channels != current.audio.channels ||
         previous.audio.sample_rate != current.audio.sample_rate ||
-        previous.audio.bitrate_kbps != current.audio.bitrate_kbps;
+        previous.audio.bitrate_kbps != current.audio.bitrate_kbps ||
+        previous.monitor_index != current.monitor_index;
 }
 }
 
@@ -51,6 +53,11 @@ QString Backend::exportOutputPath() const { return m_exportOutputPath; }
 bool Backend::captureAvailable() const { return m_captureAvailable; }
 QString Backend::captureError() const { return m_captureError; }
 QVariantList Backend::healthChecks() const { return m_healthChecks; }
+QString Backend::captureDisplayLabel() const { return m_captureDisplayLabel; }
+QString Backend::captureDisplayResolution() const { return m_captureDisplayResolution; }
+QString Backend::captureDisplayScale() const { return m_captureDisplayScale; }
+bool Backend::autoDisplayAdaptationEnabled() const { return m_autoDisplayAdaptationEnabled; }
+QVariantList Backend::availableDisplays() const { return DisplayTopologyMonitor::availableDisplays(); }
 QString Backend::appVersion() const { return ReleaseHealth::appVersion(); }
 
 // ══ Config property accessors ════════════════════════════════
@@ -109,6 +116,9 @@ void Backend::setOutputDir(const QString& v) { if (m_outputDir != v) { m_outputD
 bool Backend::launchAtStartup() const { return m_launchAtStartup; }
 void Backend::setLaunchAtStartup(bool v) { if (m_launchAtStartup != v) { m_launchAtStartup = v; emit launchAtStartupChanged(); emit configChanged(); } }
 
+int Backend::monitorIndex() const { return m_monitorIndex; }
+void Backend::setMonitorIndex(int v) { if (m_monitorIndex != v) { m_monitorIndex = v; emit monitorIndexChanged(); emit configChanged(); } }
+
 // ══ Sync from Config struct ══════════════════════════════════
 
 void Backend::syncFromConfig()
@@ -132,6 +142,7 @@ void Backend::syncFromConfig()
     m_hotkeyVk         = static_cast<int>(m_cfg->hotkey.vk);
     m_outputDir        = QString::fromStdString(m_cfg->output_dir);
     m_launchAtStartup  = m_cfg->launch_at_startup;
+    m_monitorIndex     = m_cfg->monitor_index;
 
     // Emit individual signals so QML bindings re-evaluate
     emit captureCodecChanged();
@@ -152,6 +163,13 @@ void Backend::syncFromConfig()
     emit hotkeyVkChanged();
     emit outputDirChanged();
     emit launchAtStartupChanged();
+    emit monitorIndexChanged();
+    const bool next_auto_display_adaptation = m_cfg->capture_width == 0 && m_cfg->capture_height == 0;
+    if (m_autoDisplayAdaptationEnabled != next_auto_display_adaptation)
+    {
+        m_autoDisplayAdaptationEnabled = next_auto_display_adaptation;
+        emit displayStateChanged();
+    }
     emit configChanged();
 }
 
@@ -238,6 +256,26 @@ void Backend::setHealthChecks(const QVariantList& checks)
     emit healthChecksChanged();
 }
 
+void Backend::setDisplayState(const QString& label,
+                              const QString& resolution,
+                              const QString& scale,
+                              bool autoAdaptationEnabled)
+{
+    if (m_captureDisplayLabel == label &&
+        m_captureDisplayResolution == resolution &&
+        m_captureDisplayScale == scale &&
+        m_autoDisplayAdaptationEnabled == autoAdaptationEnabled)
+    {
+        return;
+    }
+
+    m_captureDisplayLabel = label;
+    m_captureDisplayResolution = resolution;
+    m_captureDisplayScale = scale;
+    m_autoDisplayAdaptationEnabled = autoAdaptationEnabled;
+    emit displayStateChanged();
+}
+
 // ══ QML user actions ════════════════════════════════════════
 
 void Backend::saveClip()      { emit saveClipRequested(); }
@@ -311,6 +349,7 @@ bool Backend::saveConfig()
     m_cfg->hotkey.vk        = static_cast<unsigned int>(m_hotkeyVk);
     m_cfg->output_dir       = m_outputDir.toStdString();
     m_cfg->launch_at_startup = m_launchAtStartup;
+    m_cfg->monitor_index    = m_monitorIndex;
 
     const auto checks = ReleaseHealth::validateConfig(*m_cfg);
     const bool capture_restart_required = requiresCaptureRestart(previous_config, *m_cfg);

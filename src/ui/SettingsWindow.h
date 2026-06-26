@@ -42,6 +42,7 @@ private:
 
     // Video tab widgets
     QComboBox* m_cmb_capture_source = nullptr;
+    QComboBox* m_cmb_monitor_index = nullptr;
     QComboBox* m_cmb_codec = nullptr;
     QComboBox* m_cmb_encoder_backend = nullptr;
     QSpinBox*  m_spn_cqp = nullptr;

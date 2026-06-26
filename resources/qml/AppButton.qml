@@ -12,7 +12,7 @@ Button {
     property bool primary: false
     property bool danger: false
     property bool compact: false
-    property color accentColor: theme ? theme.accent : "#8EF7C7"
+    property color accentColor: theme ? theme.accent : "#2563EB"
 
     focusPolicy: Qt.StrongFocus
     hoverEnabled: true
@@ -23,8 +23,7 @@ Button {
     rightPadding: compact ? 8 : 12
     topPadding: 0
     bottomPadding: 0
-    scale: !enabled ? 1.0 : down ? 0.985 : hovered ? 1.006 : 1.0
-    Behavior on scale { NumberAnimation { duration: 110; easing.type: Easing.OutCubic } }
+    scale: 1.0
 
     Accessible.role: Accessible.Button
     Accessible.name: text.length > 0 ? text : tooltip
@@ -33,27 +32,27 @@ Button {
     background: GlassPanel {
         theme: control.theme
         tone: "raised"
-        radius: control.theme ? control.theme.radiusSm : 8
-        sheenOpacity: control.enabled ? (control.hovered || control.primary ? 1.12 : 0.90) : 0.42
-        depth: control.enabled ? (control.hovered || control.primary ? 1.12 : 0.88) : 0.55
+        radius: 0
+        sheenOpacity: 0
+        depth: 0
         color: !control.enabled
-            ? Qt.rgba(0.04, 0.05, 0.05, 0.58)
+            ? Qt.rgba(0.04, 0.06, 0.10, 0.35)
             : control.danger
-                ? (control.down ? Qt.rgba(0.31, 0.08, 0.10, 0.94) : Qt.rgba(0.18, 0.07, 0.08, 0.82))
+                ? (control.down ? Qt.rgba(control.accentColor.r, 0, 0, 0.22) : control.hovered ? Qt.rgba(control.accentColor.r, 0, 0, 0.15) : Qt.rgba(control.accentColor.r, 0, 0, 0.08))
                 : control.primary
-                    ? (control.down ? Qt.rgba(0.10, 0.25, 0.20, 0.96) : Qt.rgba(0.08, 0.20, 0.17, 0.90))
-                    : (control.down ? (control.theme ? control.theme.pressed : "#223238") : control.hovered ? (control.theme ? control.theme.hover : "#1A272D") : (control.theme ? control.theme.surfaceRaised : "#141D22"))
+                    ? (control.down ? Qt.rgba(control.accentColor.r, control.accentColor.g, control.accentColor.b, 0.22) : control.hovered ? Qt.rgba(control.accentColor.r, control.accentColor.g, control.accentColor.b, 0.15) : Qt.rgba(control.accentColor.r, control.accentColor.g, control.accentColor.b, 0.08))
+                    : (control.down ? (control.theme ? control.theme.pressed : "#213054") : control.hovered ? (control.theme ? control.theme.hover : "#17223D") : (control.theme ? control.theme.surfaceRaised : "#111A30"))
         border.color: !control.enabled
-            ? (control.theme ? Qt.rgba(control.theme.border.r, control.theme.border.g, control.theme.border.b, 0.62) : "#243137")
+            ? (control.theme ? control.theme.border : "#1B2A4A")
             : control.activeFocus
             ? control.accentColor
             : control.danger
-                ? (control.theme ? control.theme.danger : "#F05D5E")
+                ? (control.theme ? control.theme.danger : "#EF4444")
                 : control.primary
                     ? control.accentColor
                     : control.hovered
-                        ? (control.theme ? control.theme.borderStrong : "#496260")
-                        : (control.theme ? control.theme.border : "#243137")
+                        ? (control.theme ? control.theme.borderStrong : "#334E80")
+                        : (control.theme ? control.theme.border : "#1B2A4A")
         border.width: control.activeFocus ? 2 : 1
     }
 
@@ -67,14 +66,20 @@ Button {
             Layout.preferredWidth: control.compact ? 14 : 15
             Layout.preferredHeight: control.compact ? 14 : 15
             tint: !control.enabled
-                ? (control.theme ? control.theme.textSoft : "#74849A")
+                ? (control.theme ? control.theme.textSoft : "#475569")
                 : control.danger
-                    ? (control.theme ? control.theme.danger : "#F05D5E")
+                    ? (control.theme ? control.theme.danger : "#EF4444")
                     : control.hovered || control.primary
-                        ? control.accentColor
-                        : (control.theme ? control.theme.textSecondary : "#D3DDEA")
-            glowColor: control.primary && control.enabled ? control.accentColor : "transparent"
-            glowStrength: control.primary ? 0.10 : 0.0
+                        ? (control.accentColor === (control.theme ? control.theme.accent : "#2563EB") || control.accentColor === (control.theme ? control.theme.accentBlue : "#2563EB")
+                            ? (control.theme ? control.theme.textPrimary : "#E2E8F0")
+                            : control.accentColor)
+                        : (control.theme ? control.theme.textSecondary : "#94A3B8")
+            glowColor: control.primary && control.enabled
+                ? (control.accentColor === (control.theme ? control.theme.accent : "#2563EB") || control.accentColor === (control.theme ? control.theme.accentBlue : "#2563EB")
+                    ? (control.theme ? control.theme.textPrimary : control.accentColor)
+                    : control.accentColor)
+                : "transparent"
+            glowStrength: control.primary ? 0.06 : 0.0
             treatment: control.primary ? "featured" : "compact"
             iconOpacity: control.enabled ? 0.92 : 0.35
         }
@@ -83,10 +88,10 @@ Button {
             visible: control.text.length > 0 && !control.compact
             text: control.text
             color: !control.enabled
-                ? (control.theme ? control.theme.textSoft : "#74849A")
+                ? (control.theme ? control.theme.textSoft : "#475569")
                 : control.danger
-                    ? (control.theme ? control.theme.danger : "#F05D5E")
-                    : (control.theme ? control.theme.textPrimary : "#F5F8FD")
+                    ? (control.theme ? control.theme.danger : "#EF4444")
+                    : (control.theme ? control.theme.textPrimary : "#E2E8F0")
             font: control.font
             elide: Text.ElideRight
             verticalAlignment: Text.AlignVCenter
@@ -98,7 +103,7 @@ Button {
             text: control.detail
             color: control.primary
                 ? control.accentColor
-                : (control.theme ? control.theme.textSoft : "#74849A")
+                : (control.theme ? control.theme.textSoft : "#475569")
             font: control.theme ? control.theme.smallFont : Qt.font({ pixelSize: 11 })
             elide: Text.ElideRight
             verticalAlignment: Text.AlignVCenter

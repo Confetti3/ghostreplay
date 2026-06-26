@@ -9,23 +9,34 @@ Rectangle {
     property real sheenOpacity: 1.0
     property real depth: 1.0
 
-    radius: theme ? theme.radiusMd : 10
+    radius: 0
     color: {
         if (!theme)
-            return "#101720"
-        if (tone === "chrome")
-            return theme.chrome
-        if (tone === "rail")
-            return theme.rail
-        if (tone === "alt")
-            return theme.surfaceAlt
-        if (tone === "raised")
-            return theme.surfaceRaised
-        if (tone === "strong")
-            return theme.surfaceStrong
-        return theme.surface
+            return "rgba(22, 27, 38, 0.45)"
+        
+        let c = theme.surface
+        let alpha = 0.48
+        
+        if (tone === "chrome") {
+            c = theme.chrome
+            alpha = 0.78
+        } else if (tone === "rail") {
+            c = theme.rail
+            alpha = 0.48
+        } else if (tone === "alt") {
+            c = theme.surfaceAlt
+            alpha = 0.38
+        } else if (tone === "raised") {
+            c = theme.surfaceRaised
+            alpha = 0.52
+        } else if (tone === "strong") {
+            c = theme.surfaceStrong
+            alpha = 0.72
+        }
+        
+        return Qt.rgba(c.r, c.g, c.b, alpha)
     }
-    border.color: theme ? (tone === "chrome" ? theme.borderStrong : theme.border) : "#243241"
+    border.color: theme ? (tone === "chrome" ? theme.borderStrong : theme.border) : "#1B2A4A"
     border.width: 1
     clip: true
     Behavior on color { ColorAnimation { duration: 150; easing.type: Easing.OutCubic } }
@@ -90,7 +101,7 @@ Rectangle {
         anchors.leftMargin: 8
         width: 2
         height: Math.max(18, parent.height - 16)
-        radius: 1
+        radius: 0
         color: panel.accentLine
         opacity: 0.9
     }

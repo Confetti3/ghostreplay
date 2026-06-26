@@ -11,14 +11,15 @@ ApplicationWindow {
     title: "Ghost Replay"
     width: 1280
     height: 760
-    minimumWidth: 1040
-    minimumHeight: 720
+    minimumWidth: 860
+    minimumHeight: 600
     visible: false
     flags: Qt.Window | Qt.FramelessWindowHint
     color: "transparent"
     readonly property QtObject uiTheme: themeTokens
-    readonly property int windowRadius: windowChrome.maximized ? 0 : 13
+    readonly property int windowRadius: 0
     readonly property bool compactShell: width < 1140
+    readonly property bool narrowShell: width < 960
 
     readonly property color shell: themeTokens.shell
     readonly property color rail: themeTokens.rail
@@ -114,27 +115,79 @@ ApplicationWindow {
     Rectangle {
         id: shellFrame
         anchors.fill: parent
-        radius: root.windowRadius
-        color: root.shell
-        border.color: windowChrome.maximized ? "transparent" : Qt.rgba(0.62, 0.76, 0.92, 0.18)
+        radius: 0
+        gradient: Gradient {
+            GradientStop { position: 0.0; color: "#070C18" } // Highly polished, dark indigo-gray
+            GradientStop { position: 0.5; color: "#04070E" } // Very deep dark navy-black
+            GradientStop { position: 1.0; color: "#010204" } // Pure void black
+        }
+        border.color: windowChrome.maximized ? "transparent" : root.border
         border.width: windowChrome.maximized ? 0 : 1
         clip: true
-        gradient: Gradient {
-            GradientStop { position: 0.0; color: "#0C1110" }
-            GradientStop { position: 0.36; color: "#070B0A" }
-            GradientStop { position: 1.0; color: "#030504" }
+ 
+        // Continuous slow background drift animation to make the interface feel alive
+        property real driftAngle: 0.0
+        NumberAnimation on driftAngle {
+            from: 0
+            to: 360
+            duration: 80000 // 80 seconds slow drift loop
+            loops: Animation.Infinite
+            running: true
         }
-
-        Repeater {
-            model: 7
-            Rectangle {
-                width: shellFrame.width * 1.2
-                height: 1
-                x: -shellFrame.width * 0.1
-                y: 56 + index * Math.max(34, shellFrame.height / 16)
-                rotation: -8
-                color: Qt.rgba(0.56, 0.97, 0.78, index % 3 === 0 ? 0.014 : 0.006)
-            }
+ 
+        readonly property real driftX1: Math.cos(shellFrame.driftAngle * Math.PI / 180) * 10
+        readonly property real driftY1: Math.sin(shellFrame.driftAngle * Math.PI / 180) * 10
+        readonly property real driftX2: Math.sin(shellFrame.driftAngle * Math.PI / 180) * -14
+        readonly property real driftY2: Math.cos(shellFrame.driftAngle * Math.PI / 180) * -14
+ 
+        // Layer 1: Deep Mesh/Texture (Subtle parallax, slow drift)
+        Image {
+            id: bgTexture
+            width: parent.width + 80
+            height: parent.height + 80
+ 
+            property real targetX: windowChrome.mouseActive 
+                ? (windowChrome.mouseX - parent.width / 2) * -0.004 
+                : 0.0
+            property real targetY: windowChrome.mouseActive 
+                ? (windowChrome.mouseY - parent.height / 2) * -0.004 
+                : 0.0
+ 
+            x: -40 + targetX + shellFrame.driftX1
+            y: -40 + targetY + shellFrame.driftY1
+ 
+            Behavior on x { SpringAnimation { spring: 1.5; damping: 0.96; epsilon: 0.1 } }
+            Behavior on y { SpringAnimation { spring: 1.5; damping: 0.96; epsilon: 0.1 } }
+ 
+            source: "qrc:/images/bg_texture.png"
+            fillMode: Image.PreserveAspectCrop
+            opacity: 0.20
+            smooth: true
+        }
+ 
+        // Layer 2: Floating Particles Overlay (More sensitive parallax, inverse drift)
+        Image {
+            id: bgParticles
+            width: parent.width + 100
+            height: parent.height + 100
+ 
+            property real targetX: windowChrome.mouseActive 
+                ? (windowChrome.mouseX - parent.width / 2) * -0.008 
+                : 0.0
+            property real targetY: windowChrome.mouseActive 
+                ? (windowChrome.mouseY - parent.height / 2) * -0.008 
+                : 0.0
+ 
+            x: -50 + targetX + shellFrame.driftX2
+            y: -50 + targetY + shellFrame.driftY2
+ 
+            Behavior on x { SpringAnimation { spring: 1.5; damping: 0.96; epsilon: 0.1 } }
+            Behavior on y { SpringAnimation { spring: 1.5; damping: 0.96; epsilon: 0.1 } }
+ 
+            source: "qrc:/images/bg_particles.png"
+            fillMode: Image.PreserveAspectCrop
+            opacity: 0.10
+            smooth: true
         }
 
         ColumnLayout {
@@ -147,7 +200,7 @@ ApplicationWindow {
                 tone: "chrome"
                 radius: root.windowRadius
                 Layout.fillWidth: true
-                Layout.preferredHeight: 56
+                Layout.preferredHeight: 48
                 border.width: 0
 
                 MouseArea {
@@ -159,24 +212,24 @@ ApplicationWindow {
 
                 RowLayout {
                     anchors.fill: parent
-                    anchors.leftMargin: 16
+                    anchors.leftMargin: 14
                     anchors.rightMargin: 0
                     spacing: 12
 
                     RowLayout {
-                        spacing: 12
-                        Layout.preferredWidth: 240
+                        spacing: 10
+                        Layout.preferredWidth: 220
 
                         AppLogo {
                             theme: themeTokens
-                            Layout.preferredWidth: 32
-                            Layout.preferredHeight: 32
+                            Layout.preferredWidth: 28
+                            Layout.preferredHeight: 28
                         }
 
                         Text {
                             text: "Ghost Replay"
                             color: root.textPrimary
-                            font: Qt.font({ family: "Segoe UI Variable Display", pixelSize: 18, weight: Font.DemiBold })
+                            font: Qt.font({ family: "Segoe UI Variable Display", pixelSize: 17, weight: Font.DemiBold })
                         }
                     }
 
@@ -194,7 +247,7 @@ ApplicationWindow {
                         }
                         AppChip {
                             theme: themeTokens
-                            text: (backend.captureWidth > 0 ? backend.captureWidth + "x" + backend.captureHeight : "Native") + " " + backend.captureFps
+                            text: (backend.captureDisplayResolution.length > 0 ? backend.captureDisplayResolution : "Native") + " " + backend.captureFps
                             accentColor: root.accentCyan
                             strong: true
                         }
@@ -215,20 +268,20 @@ ApplicationWindow {
 
                 RowLayout {
                     anchors.fill: parent
-                    anchors.margins: 14
-                    spacing: 14
+                    anchors.margins: 10
+                    spacing: 10
 
                     GlassPanel {
                         id: navRail
                         theme: themeTokens
                         tone: "rail"
-                        Layout.preferredWidth: root.compactShell ? 88 : 250
+                        Layout.preferredWidth: root.compactShell ? 78 : 232
                         Layout.fillHeight: true
 
                         ColumnLayout {
                             anchors.fill: parent
-                            anchors.margins: 16
-                            spacing: 12
+                            anchors.margins: 14
+                            spacing: 10
 
                             ColumnLayout {
                                 Layout.fillWidth: true
@@ -237,33 +290,37 @@ ApplicationWindow {
                                     visible: !root.compactShell
                                     text: "WORKSPACE"
                                     color: root.textMuted
-                                    font: root.smallFont
+                                    font: Qt.font({ family: themeTokens.monoFamily, pixelSize: 10, letterSpacing: 2 })
                                 }
 
                                 GlassPanel {
                                     theme: themeTokens
                                     tone: "raised"
                                     Layout.fillWidth: true
-                                    Layout.preferredHeight: 40
-                                    color: Qt.rgba(0.055, 0.086, 0.086, 0.58)
-                                    border.color: Qt.rgba(root.border.r, root.border.g, root.border.b, 0.48)
+                                    Layout.preferredHeight: 38
+                                    color: themeTokens ? Qt.rgba(themeTokens.surfaceAlt.r, themeTokens.surfaceAlt.g, themeTokens.surfaceAlt.b, 0.35) : "rgba(13, 21, 39, 0.35)"
+                                    border.color: root.border
 
                                     RowLayout {
                                         anchors.fill: parent
-                                        anchors.leftMargin: 12
-                                        anchors.rightMargin: 12
-                                        spacing: 10
+                                        anchors.leftMargin: root.compactShell ? 0 : 12
+                                        anchors.rightMargin: root.compactShell ? 0 : 12
+                                        spacing: root.compactShell ? 0 : 10
+
+                                        Item { visible: root.compactShell; Layout.fillWidth: true }
 
                                         MonoIcon {
                                             source: root.iconDesktop
                                             Layout.preferredWidth: 18
                                             Layout.preferredHeight: 18
-                                            tint: root.accentBlue
-                                            glowColor: root.accentBlue
-                                            glowStrength: 0.13
-                                            treatment: "featured"
+                                            tint: root.textPrimary
+                                            glowColor: "transparent"
+                                            glowStrength: 0.0
+                                            treatment: "compact"
                                             iconOpacity: 0.98
                                         }
+
+                                        Item { visible: root.compactShell; Layout.fillWidth: true }
 
                                         Text {
                                             visible: !root.compactShell
@@ -281,28 +338,29 @@ ApplicationWindow {
                                 visible: !root.compactShell
                                 text: "CAPTURE CONTROLS"
                                 color: root.textMuted
-                                font: root.smallFont
+                                font: Qt.font({ family: themeTokens.monoFamily, pixelSize: 10, letterSpacing: 2 })
                             }
 
                             ColumnLayout {
                                 Layout.fillWidth: true
-                                spacing: 8
+                                spacing: 7
 
                                 ActionButton {
                                     icon: root.iconSave
                                     label: "Save replay"
-                                    detail: backend.captureAvailable ? shortcutText() : "Unavailable"
+                                    detail: saveReplayDetail()
                                     primary: true
-                                    enabled: backend.captureAvailable
+                                    enabled: bufferReady()
                                     onClicked: backend.saveClip()
                                 }
 
                                 ActionButton {
-                                    icon: backend.captureAvailable ? (backend.recording ? root.iconPause : root.iconPlay) : root.iconRefresh
-                                    label: backend.captureAvailable ? (backend.recording ? "Pause capture" : "Resume capture") : "Retry capture"
-                                    detail: backend.captureAvailable ? (backend.recording ? "Stop" : "Resume") : "Health"
-                                    accentColor: backend.captureAvailable ? (backend.recording ? root.recordRed : root.accent) : root.warningYellow
-                                    onClicked: backend.captureAvailable ? backend.toggleRecording() : backend.retryCapture()
+                                    visible: backend.captureAvailable
+                                    icon: backend.recording ? root.iconPause : root.iconPlay
+                                    label: backend.recording ? "Pause capture" : "Resume capture"
+                                    detail: backend.recording ? "Pause" : "Resume"
+                                    accentColor: backend.recording ? root.recordRed : root.accent
+                                    onClicked: backend.toggleRecording()
                                 }
                             }
 
@@ -310,13 +368,13 @@ ApplicationWindow {
 
                             ColumnLayout {
                                 Layout.fillWidth: true
-                                spacing: 6
+                                spacing: 5
 
                                 Text {
                                     visible: !root.compactShell
                                     text: "NAVIGATION"
                                     color: root.textMuted
-                                    font: root.smallFont
+                                    font: Qt.font({ family: themeTokens.monoFamily, pixelSize: 10, letterSpacing: 2 })
                                 }
 
                                 NavRow { icon: root.iconOverview; label: "Overview"; detail: "Capture state"; selected: root.currentView === 0; onClicked: root.goToView(0) }
@@ -329,12 +387,12 @@ ApplicationWindow {
                             ColumnLayout {
                                 visible: !root.compactShell
                                 Layout.fillWidth: true
-                                spacing: 10
+                                spacing: 8
 
                                 Text {
                                     text: "RUNTIME"
                                     color: root.textMuted
-                                    font: root.smallFont
+                                    font: Qt.font({ family: themeTokens.monoFamily, pixelSize: 10, letterSpacing: 2 })
                                 }
 
                                 InfoLine { label: "State"; value: backend.captureAvailable ? (backend.recording ? "Recording" : "Paused") : "Unavailable"; accentColor: backend.captureAvailable ? (backend.recording ? root.accent : root.inactive) : root.recordRed }
@@ -347,17 +405,15 @@ ApplicationWindow {
 
                             RowLayout {
                                 Layout.fillWidth: true
-                                spacing: 10
-                                SmallIconButton { icon: root.iconSettings; tooltip: "Open settings"; onClicked: root.goToView(2) }
+                                spacing: root.compactShell ? 0 : 10
+                                Item { visible: root.compactShell; Layout.fillWidth: true }
                                 SmallIconButton { icon: root.iconRefresh; tooltip: "Refresh clips"; onClicked: backend.requestRefresh() }
                                 Item { Layout.fillWidth: true }
                             }
                         }
                     }
 
-                    GlassPanel {
-                        theme: themeTokens
-                        tone: "surface"
+                    Item {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
 
@@ -509,11 +565,23 @@ ApplicationWindow {
         return parts.join("+")
     }
 
+    function bufferReady() {
+        return backend.captureAvailable && backend.bufferSeconds > 0 && backend.bufferPackets > 0
+    }
+
+    function saveReplayDetail() {
+        if (!backend.captureAvailable)
+            return "Unavailable"
+        if (!bufferReady())
+            return "Warming up"
+        return shortcutText()
+    }
+
     function controlAccent(iconSource, danger) {
         if (danger)
             return recordRed
         if (iconSource === iconSave || iconSource === iconOverview || iconSource === iconDesktop || iconSource === iconSettings || iconSource === iconHotkey)
-            return accentBlue
+            return root.textPrimary
         if (iconSource === iconFolder || iconSource === iconReveal || iconSource === iconOpen || iconSource === iconOutput)
             return accentCyan
         if (iconSource === iconClipboard || iconSource === iconVideo || iconSource === iconTrimIn || iconSource === iconTrimOut)
@@ -522,7 +590,7 @@ ApplicationWindow {
             return accentGreen
         if (iconSource === iconAudio || iconSource === iconVolume || iconSource === iconPause)
             return warningYellow
-        return accentHover
+        return root.textPrimary
     }
 
     function openClipEditor(clip) {
@@ -573,6 +641,7 @@ ApplicationWindow {
         Layout.preferredWidth: 48
         Layout.preferredHeight: titleBar.height
         color: mouse.pressed ? root.pressedBg : mouse.containsMouse ? hoverColor : "transparent"
+        Behavior on color { ColorAnimation { duration: 120 } }
 
         Text {
             anchors.centerIn: parent
@@ -600,9 +669,9 @@ ApplicationWindow {
         signal clicked()
 
         Layout.fillWidth: true
-        Layout.preferredHeight: 42
+        Layout.preferredHeight: 38
         activeFocusOnTab: true
-        radius: themeTokens.radiusMd
+        radius: 0
         opacity: enabled ? 1.0 : 0.48
         color: enabled && mouse.pressed ? root.pressedBg : enabled && mouse.containsMouse ? Qt.rgba(0.10, 0.16, 0.23, 0.94) : Qt.rgba(0.03, 0.05, 0.09, 0.46)
         border.color: activeFocus ? accentColor : (primary ? (enabled && mouse.containsMouse ? accentColor : root.borderStrong) : (enabled && mouse.containsMouse ? root.borderStrong : root.border))
@@ -611,29 +680,39 @@ ApplicationWindow {
         Rectangle {
             visible: primary
             anchors.left: parent.left
-            anchors.leftMargin: 8
+            anchors.leftMargin: 0
             anchors.verticalCenter: parent.verticalCenter
             width: 2
-            height: 20
-            radius: 1
+            height: parent.height
+            radius: 0
             color: actionButton.accentColor
         }
 
         RowLayout {
             anchors.fill: parent
-            anchors.leftMargin: primary ? 16 : 12
-            anchors.rightMargin: 12
-            spacing: 9
+            anchors.leftMargin: root.compactShell ? 0 : (primary ? 15 : 11)
+            anchors.rightMargin: root.compactShell ? 0 : 10
+            spacing: root.compactShell ? 0 : 8
+
+            Item {
+                visible: root.compactShell
+                Layout.fillWidth: true
+            }
 
             MonoIcon {
                 source: actionButton.icon
                 Layout.preferredWidth: actionButton.primary ? 18 : 17
                 Layout.preferredHeight: actionButton.primary ? 18 : 17
-                tint: actionButton.primary ? actionButton.accentColor : root.textSecondary
-                glowColor: actionButton.primary ? actionButton.accentColor : "transparent"
+                tint: actionButton.primary ? (actionButton.accentColor === root.accent || actionButton.accentColor === root.accentBlue ? root.textPrimary : actionButton.accentColor) : root.textSecondary
+                glowColor: actionButton.primary ? (actionButton.accentColor === root.accent || actionButton.accentColor === root.accentBlue ? root.textPrimary : actionButton.accentColor) : "transparent"
                 glowStrength: actionButton.primary ? 0.12 : 0.0
                 treatment: actionButton.primary ? "featured" : "plain"
                 iconOpacity: primary ? 0.98 : 0.84
+            }
+
+            Item {
+                visible: root.compactShell
+                Layout.fillWidth: true
             }
 
             Text {
@@ -682,39 +761,52 @@ ApplicationWindow {
         signal clicked()
 
         Layout.fillWidth: true
-        Layout.preferredHeight: 48
+        Layout.preferredHeight: 44
         activeFocusOnTab: true
-        radius: themeTokens.radiusMd
+        radius: 0
         color: selected ? Qt.rgba(0.09, 0.17, 0.27, 0.82) : (mouse.pressed ? root.pressedBg : (mouse.containsMouse ? Qt.rgba(0.08, 0.13, 0.19, 0.50) : "transparent"))
         border.color: activeFocus ? root.accent : (selected ? root.borderStrong : (mouse.containsMouse ? root.border : "transparent"))
         border.width: activeFocus ? 2 : 1
 
+        Behavior on color { ColorAnimation { duration: 150; easing.type: Easing.OutCubic } }
+        Behavior on border.color { ColorAnimation { duration: 150; easing.type: Easing.OutCubic } }
+
         Rectangle {
             visible: selected
             anchors.left: parent.left
-            anchors.leftMargin: 8
+            anchors.leftMargin: 0
             anchors.verticalCenter: parent.verticalCenter
             width: 2
-            height: 18
-            radius: 1
+            height: parent.height
+            radius: 0
             color: root.accent
         }
 
         RowLayout {
             anchors.fill: parent
-            anchors.leftMargin: 12
-            anchors.rightMargin: 10
-            spacing: 10
+            anchors.leftMargin: root.compactShell ? 0 : (selected ? 24 : 12)
+            anchors.rightMargin: root.compactShell ? 0 : 10
+            spacing: root.compactShell ? 0 : 9
+
+            Item {
+                visible: root.compactShell
+                Layout.fillWidth: true
+            }
 
             MonoIcon {
                 source: navRow.icon
                 Layout.preferredWidth: navRow.selected ? 20 : 18
                 Layout.preferredHeight: navRow.selected ? 20 : 18
-                tint: navRow.selected ? (navRow.icon === root.iconOverview ? root.textPrimary : root.controlAccent(navRow.icon, false)) : root.textSecondary
+                tint: navRow.selected ? root.controlAccent(navRow.icon, false) : root.textSecondary
                 glowColor: navRow.selected ? root.controlAccent(navRow.icon, false) : "transparent"
                 glowStrength: navRow.selected ? 0.15 : 0.0
                 treatment: navRow.selected ? "featured" : "plain"
                 iconOpacity: navRow.selected ? 0.98 : 0.84
+            }
+
+            Item {
+                visible: root.compactShell
+                Layout.fillWidth: true
             }
 
             ColumnLayout {
@@ -767,7 +859,7 @@ ApplicationWindow {
         Rectangle {
             Layout.preferredWidth: 7
             Layout.preferredHeight: 7
-            radius: 4
+            radius: 0
             color: parent.accentColor
         }
 
@@ -796,7 +888,7 @@ ApplicationWindow {
         Layout.preferredWidth: 34
         Layout.preferredHeight: 34
         activeFocusOnTab: true
-        radius: themeTokens.radiusMd
+        radius: 0
         color: mouse.pressed ? root.pressedBg : mouse.containsMouse ? root.hoverBg : Qt.rgba(0.05, 0.08, 0.12, 0.56)
         border.color: activeFocus ? root.controlAccent(smallIconButton.icon, false) : (mouse.containsMouse ? root.borderStrong : root.border)
         border.width: activeFocus ? 2 : 1

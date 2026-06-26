@@ -1,9 +1,11 @@
 <RCC>
     <qresource prefix="/">
-        <file>branding/ghost-loop.png</file>
         <file>fonts/Inter-opsz-wght.ttf</file>
         <file>fonts/SpaceGrotesk-wght.ttf</file>
         <file>icons/ghostreplay.svg</file>
+        <file>images/bg_texture.png</file>
+        <file>images/bg_particles.png</file>
+        <file>images/bg_spotlight.png</file>
         <file>icons/ui/audio.svg</file>
         <file>icons/ui/back.svg</file>
         <file>icons/ui/buffer.svg</file>
