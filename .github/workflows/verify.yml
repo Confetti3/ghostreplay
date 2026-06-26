@@ -1,0 +1,23 @@
+name: Ghost Replay Validation
+
+on:
+  push:
+    branches: [ master, main, release/** ]
+  pull_request:
+    branches: [ master, main ]
+
+jobs:
+  validate:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup CMake
+        uses: jasonacox/setup-cmake@v1.0.5
+
+      - name: Verify CMake Configuration
+        run: |
+          cmake --version
+          echo "Source checkout complete. Ghost Replay requires custom Qt6 and FFmpeg configurations for compilation."

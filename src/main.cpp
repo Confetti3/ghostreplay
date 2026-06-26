@@ -390,12 +390,15 @@ int main(int argc, char* argv[])
     const QString serverName = QStringLiteral("GhostReplaySingleInstanceSocket");
     QLocalSocket socket;
     socket.connectToServer(serverName);
+    std::cout << "[SINGLE_INSTANCE] Trying to connect to server: " << serverName.toStdString() << std::endl;
     if (socket.waitForConnected(500))
     {
+        std::cout << "[SINGLE_INSTANCE] Connected! Exiting this instance." << std::endl;
         socket.write("show");
         socket.waitForBytesWritten(500);
         return 0; // Exit this instance
     }
+    std::cout << "[SINGLE_INSTANCE] Connection failed, continuing initialization." << std::endl;
 
     // Host the server in this first instance
     QLocalServer::removeServer(serverName);
@@ -446,10 +449,14 @@ int main(int argc, char* argv[])
         shellDpiFilter = std::make_unique<ShellDpiEventFilter>(mainWindow, qapp);
         qapp.installNativeEventFilter(shellDpiFilter.get());
         windowChrome.setWindow(mainWindow);
-        mainWindow->show();
-        fitWindowToAvailableScreen(mainWindow, qapp, false);
-        QTimer::singleShot(0, mainWindow, [mainWindow, &qapp]()
+        QTimer::singleShot(0, mainWindow, [mainWindow, &qapp, start_minimized = cfg.start_minimized]()
         {
+            if (!start_minimized)
+            {
+                mainWindow->show();
+                mainWindow->raise();
+                mainWindow->requestActivate();
+            }
             fitWindowToAvailableScreen(mainWindow, qapp, false);
         });
 

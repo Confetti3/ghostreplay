@@ -1,47 +1,76 @@
 # Ghost Replay
 
-Ghost Replay is a Windows instant-replay recorder for saving recent desktop, window, or foreground-game moments to MP4.
+**Instant-replay recording for Windows.** Save the last few seconds of your desktop, window, or game the moment something worth keeping happens — no OBS, no always-on stream required.
 
-## Status
+[![Release](https://img.shields.io/badge/release-v0.1.0--beta-blue)](https://github.com/Confetti3/ghostreplay/releases/tag/v0.1.0)
+[![Platform](https://img.shields.io/badge/platform-Windows%2010%2B-lightgrey)](https://github.com/Confetti3/ghostreplay)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-This repository is in public beta shape. The release build uses H.264 capture, WASAPI loopback audio, a rolling replay buffer, a Qt/QML desktop UI, tray controls, clip browsing, trimming, and FFmpeg-based share exports.
+---
+
+## Screenshots
+
+**Overview** — live capture status, replay buffer, and recent saves at a glance.
+
+![Overview](docs/images/overview.png)
+
+**Clips** — your full clip library with search, game filter, thumbnails, and one-click export.
+
+![Clips](docs/images/clips.png)
+
+**Settings** — configure capture source, codec, quality, hotkeys, and output folder.
+
+![Settings](docs/images/settings.png)
+
+---
+
+## Features
+
+- **Rolling replay buffer** — always recording the last N seconds (configurable); press a hotkey to keep the clip
+- **Desktop, window, or game capture** — uses the Windows graphics stack with no hooks or drivers required
+- **WASAPI loopback audio** — captures system audio alongside video automatically
+- **H.264 encoding** — hardware-accelerated encoding via the best available encoder on your GPU
+- **Clip browser** — browse, preview, search, and filter your library by game or date
+- **Shareable exports** — FFmpeg-based trimming and re-encode for smaller share-ready files
+- **System tray integration** — runs quietly in the background; show or exit from the tray menu
+- **No telemetry** — records locally, never uploads anything, no accounts required
+
+---
 
 ## Requirements
 
-- Windows 10 1903 or newer.
-- Visual Studio 2022 with MSVC C++20 tools.
-- CMake 3.25 or newer.
-- Qt 6 with Core, Widgets, Quick, QuickControls2, QuickDialogs2, and Multimedia.
-- A shared, LGPL-compatible FFmpeg dev build with `include`, `lib`, and runtime DLLs. Do not ship GPL-enabled FFmpeg builds for public releases.
-- Run CMake builds from a Visual Studio Developer PowerShell or x64 Native Tools Command Prompt so deployment tools can find the MSVC runtime.
+| Component | Version |
+|-----------|---------|
+| Windows   | 10 1903 or newer |
+| Visual Studio | 2022 with MSVC C++20 |
+| CMake     | 3.25 or newer |
+| Qt 6      | Core, Widgets, Quick, QuickControls2, QuickDialogs2, Multimedia |
+| FFmpeg    | Shared LGPL-compatible dev build (include, lib, runtime DLLs) |
 
-## Security And Privacy
+> **Note:** Run CMake builds from a **Visual Studio Developer PowerShell** or **x64 Native Tools Command Prompt** so deployment tools can locate the MSVC runtime.
 
-Ghost Replay records and stores data locally. It does not include telemetry,
-cloud upload, account features, or analytics. See [SECURITY.md](SECURITY.md) for
-the vulnerability reporting process and release packaging expectations.
+---
 
-## Configure And Build
+## Build
 
 ```powershell
-cmake -S . -B build -G "Visual Studio 17 2022" -A x64 -DBUILD_TESTS=ON `
+cmake -S . -B build -G "Visual Studio 17 2022" -A x64 `
   -DQT6_DIR="C:\Qt\6.x.x\msvc2022_64" `
   -DFFMPEG_DIR="C:\ffmpeg"
 
 cmake --build build --config Release
 ```
 
-If `nlohmann_json` or Catch2 are already installed with CMake package files,
-Ghost Replay uses those packages. Otherwise CMake fetches the pinned versions
-listed in [docs/THIRD_PARTY_NOTICES.md](docs/THIRD_PARTY_NOTICES.md).
+If `nlohmann_json` or Catch2 are already installed with CMake package files, Ghost Replay uses those. Otherwise CMake fetches the pinned versions listed in [docs/THIRD_PARTY_NOTICES.md](docs/THIRD_PARTY_NOTICES.md).
 
-Build tests with:
+### Run Tests
 
 ```powershell
-cmake -S . -B build -DBUILD_TESTS=ON
 cmake --build build --config Release --target ghostreplay_tests
 ctest --test-dir build -C Release --output-on-failure
 ```
+
+---
 
 ## Run
 
@@ -49,30 +78,45 @@ ctest --test-dir build -C Release --output-on-failure
 build\Release\ghostreplay.exe
 ```
 
-The app writes settings to `ghostreplay.json`, logs to `ghostreplay.log`, and clips to `clips` by default. Closing the window hides the app to the tray; use the tray menu to show it again or exit.
+The app writes settings to `ghostreplay.json`, logs to `ghostreplay.log`, and clips to the `clips` folder — all relative to the executable. Closing the window hides the app to the tray; use the tray menu to show it again or exit fully.
 
-## Package
+---
+
+## Package a Portable Release
 
 ```powershell
 cmake --build build --config Release --target package_portable
 ```
 
-The package step stages `dist\GhostReplay-<version>-win64-portable` and checks packaged `ffmpeg.exe` for GPL/libx264/libx265 flags before completing.
-Release packages use [config/ghostreplay.example.json](config/ghostreplay.example.json) for public defaults, not your local `ghostreplay.json`.
+This stages `dist\GhostReplay-<version>-win64-portable` and validates the bundled `ffmpeg.exe` for LGPL compliance before completing. Release packages use [config/ghostreplay.example.json](config/ghostreplay.example.json) for clean public defaults.
 
-See [docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md) before publishing.
+See [docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md) before publishing a public release.
+
+---
 
 ## Troubleshooting
 
-- Use Overview > Diagnostics when capture is unavailable.
-- Use Settings > Output to choose a writable clips folder.
-- If the save hotkey is already taken, change it in Settings and save.
-- Window capture opens the Windows picker when you retry capture.
-- HEVC capture is intentionally disabled in this beta until replay-save muxing is validated end to end.
+| Problem | Solution |
+|---------|----------|
+| Capture not starting | Check Overview for diagnostics; retry capture to open the Windows picker |
+| Save hotkey conflicts | Reassign in Settings → Hotkeys and save |
+| Clips folder not writable | Change the output path in Settings → Output |
+| HEVC unavailable | Intentionally disabled in this beta until muxing is fully validated |
 
-## UI Assets
+---
 
-The Qt/QML interface bundles Inter and Space Grotesk from Google Fonts for a
-consistent release appearance. Both fonts are distributed under the SIL Open
-Font License; see [docs/THIRD_PARTY_NOTICES.md](docs/THIRD_PARTY_NOTICES.md)
-and `resources/fonts`.
+## Privacy & Security
+
+Ghost Replay records and stores data **locally only**. It includes no telemetry, cloud upload, accounts, or analytics. See [SECURITY.md](SECURITY.md) for the vulnerability reporting process.
+
+---
+
+## UI Assets & Licenses
+
+The Qt/QML interface bundles **Inter** and **Space Grotesk** from Google Fonts, both under the SIL Open Font License. See [docs/THIRD_PARTY_NOTICES.md](docs/THIRD_PARTY_NOTICES.md) and `resources/fonts` for full attribution.
+
+---
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on bug reports, pull requests, and the development workflow.
